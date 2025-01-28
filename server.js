@@ -81,40 +81,36 @@ function recordAttempt(ip) {
     loginAttempts.set(ip, attempts);
 }
 
-// Security middleware
-app.use(
-    helmet.contentSecurityPolicy({
-        directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'"],
-            styleSrc: ["'self'", "'unsafe-inline'"],
-            imgSrc: ["'self'"],
-        },
-    })
-);
-
-// Add only the security headers we need
-app.use((req, res, next) => {
-    res.setHeader('X-Content-Type-Options', 'nosniff');
-    res.setHeader('X-XSS-Protection', '1; mode=block');
-    next();
-});
+// Security middleware - minimal configuration like DumbDrop
+app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false,
+    crossOriginOpenerPolicy: false,
+    crossOriginResourcePolicy: false,
+    originAgentCluster: false,
+    dnsPrefetchControl: false,
+    frameguard: false,
+    hsts: false,
+    ieNoOpen: false,
+    noSniff: false,
+    permittedCrossDomainPolicies: false,
+    referrerPolicy: false,
+    xssFilter: false
+}));
 
 app.use(express.json());
 app.use(cookieParser());
 
-// Session configuration with secure settings
+// Session configuration - simplified like DumbDrop
 app.use(session({
     secret: crypto.randomBytes(32).toString('hex'),
     resave: false,
-    saveUninitialized: false,
+    saveUninitialized: true,
     cookie: {
         secure: false,
         httpOnly: true,
-        sameSite: 'none',
-        maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    },
-    proxy: true
+        sameSite: 'lax'
+    }
 }));
 
 // Constant-time PIN comparison to prevent timing attacks
