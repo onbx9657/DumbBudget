@@ -91,6 +91,7 @@ app.use(helmet({
             imgSrc: ["'self'"],
         },
     },
+    hsts: false, // Disable HSTS to allow HTTP
 }));
 
 app.use(express.json());
@@ -102,9 +103,9 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: process.env.NODE_ENV === 'production',
+        secure: false, // Allow HTTP
         httpOnly: true,
-        sameSite: 'strict',
+        sameSite: 'lax', // Changed from 'strict' to work better with HTTP
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
     }
 }));
