@@ -97,5 +97,11 @@ DumbBudget includes several security features:
 - Request features through issues
 - [Join our community discussions](https://discord.gg/zJutzxWyq2)
 
+## Support the Project
+
+<a href="https://www.buymeacoffee.com/dumbware" target="_blank">
+  <img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" height="60">
+</a>
+
 ---
 Made with ❤️ by [DumbWare.io](https://github.com/DumbWareio)
