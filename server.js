@@ -82,17 +82,23 @@ function recordAttempt(ip) {
 }
 
 // Security middleware
-app.use(helmet({
-    contentSecurityPolicy: {
+app.use(
+    helmet.contentSecurityPolicy({
         directives: {
             defaultSrc: ["'self'"],
             scriptSrc: ["'self'"],
             styleSrc: ["'self'", "'unsafe-inline'"],
             imgSrc: ["'self'"],
         },
-    },
-    hsts: false, // Disable HSTS to allow HTTP
-}));
+    })
+);
+
+// Add only the security headers we need
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-XSS-Protection', '1; mode=block');
+    next();
+});
 
 app.use(express.json());
 app.use(cookieParser());
@@ -103,11 +109,12 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: {
-        secure: false, // Allow HTTP
+        secure: false,
         httpOnly: true,
-        sameSite: 'lax', // Changed from 'strict' to work better with HTTP
+        sameSite: 'none',
         maxAge: 24 * 60 * 60 * 1000 // 24 hours
-    }
+    },
+    proxy: true
 }));
 
 // Constant-time PIN comparison to prevent timing attacks
