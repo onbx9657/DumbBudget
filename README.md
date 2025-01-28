@@ -2,7 +2,8 @@
 
 A simple, secure personal budgeting app with PIN protection. Track your income and expenses with a clean, modern interface.
 
-![DumbBudget Logo](https://raw.githubusercontent.com/DumbWareio/DumbBudget/main/public/logo.png)
+![image](https://github.com/user-attachments/assets/7874b23a-159f-4c93-8e5d-521c18666547)
+
 
 ## Features
 
