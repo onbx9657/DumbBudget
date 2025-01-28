@@ -1,77 +1,100 @@
-# Dumb Boilerplate
+# DumbBudget
 
-A simple boilerplate for creating "Dumb" line of applications with PIN authentication and theme support.
+A simple, secure personal budgeting app with PIN protection. Track your income and expenses with a clean, modern interface.
 
-WHEN COPYING THIS BOILERPLATE, CHANGE THE PIN NAME, CHANGE PACKAGE.JSON NAME AND RUN NPM INSTALL.
+![DumbBudget Logo](https://raw.githubusercontent.com/DumbWareio/DumbBudget/main/public/logo.png)
 
 ## Features
 
-- PIN-based authentication
-- Light/Dark theme toggle
-- Secure session management
-- Modern responsive design
-- Mobile-friendly PIN input
+- 🔒 PIN-protected access
+- 💰 Track income and expenses
+- 📊 Real-time balance calculations
+- 🏷️ Categorize transactions
+- 📅 Date range filtering
+- 🔄 Sort by date or amount
+- 📱 Responsive design
+- 🌓 Light/Dark theme
+- 📤 Export to CSV
+- 🔍 Filter transactions by type
 
-## Setup
+## Quick Start
 
-1. Install dependencies:
+### Using Docker
+
+```bash
+docker run -d \
+  -p 3000:3000 \
+  -e DUMBBUDGET_PIN=12345 \
+  dumbwareio/dumbbudget:latest
+```
+
+### Environment Variables
+
+| Variable | Description | Required | Default | Example |
+|----------|-------------|----------|---------|---------|
+| `DUMBBUDGET_PIN` | PIN code for accessing the application | Yes | - | `12345` |
+| `PORT` | Port number for the server | No | `3000` | `8080` |
+| `NODE_ENV` | Environment mode | No | `production` | `development` |
+
+## Development Setup
+
+1. Clone the repository:
+```bash
+git clone https://github.com/DumbWareio/DumbBudget.git
+cd DumbBudget
+```
+
+2. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Create a `.env` file in the root directory and add your PIN:
-```bash
-# Replace DUMB_BOILERPLATE with your project name in uppercase, with hyphens replaced by underscores
-DUMB_BOILERPLATE_PIN=1234
+3. Create a `.env` file:
+```env
+DUMBBUDGET_PIN=12345
+PORT=3000
+NODE_ENV=development
 ```
 
-3. Start the server:
+4. Start the development server:
 ```bash
-# Development mode with auto-reload
 npm run dev
-
-# Production mode
-npm start
 ```
 
-## Security Features
+5. Open http://localhost:3000 in your browser
 
-- Constant-time PIN comparison to prevent timing attacks
-- Secure session cookies
-- CSP headers with Helmet.js
-- HTTPS ready (recommended for production)
-- XSS protection
-- CSRF protection
+## Building from Source
 
-## Customization
+```bash
+# Build the Docker image
+docker build -t dumbwareio/dumbbudget:latest .
 
-1. Update the project name in `package.json`
-2. Modify the title in `public/index.html`
-3. Customize styles in `public/styles.css`
-4. Add your own routes in `server.js`
-
-## Development
-
-The boilerplate uses the following structure:
-```
-.
-├── public/
-│   ├── index.html
-│   ├── login.html
-│   ├── styles.css
-│   └── script.js
-├── server.js
-├── package.json
-└── .env
+# Run the container
+docker run -d -p 3000:3000 -e DUMBBUDGET_PIN=12345 dumbwareio/dumbbudget:latest
 ```
 
-## Production Deployment
+## Contributing
 
-1. Set `NODE_ENV=production` in your environment
-2. Use HTTPS in production
-3. Set appropriate session secret
-4. Configure secure cookie settings
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
-## License
+## Security
 
-MIT 
+DumbBudget includes several security features:
+- PIN protection for access
+- Rate limiting on PIN attempts
+- Temporary lockout after failed attempts
+- No sensitive data stored in browser storage
+- Secure session handling
+
+## Support
+
+- Report bugs by opening an issue
+- Request features through issues
+- Join our community discussions
+
+---
+Made with ❤️ by [DumbWare.io](https://github.com/DumbWareio)
