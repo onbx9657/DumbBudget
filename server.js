@@ -138,9 +138,8 @@ const authMiddleware = (req, res, next) => {
     next();
 };
 
-// Serve static files for public assets
-app.use('/styles.css', express.static('public/styles.css'));
-app.use('/script.js', express.static('public/script.js'));
+// Serve static files from public directory
+app.use(express.static('public'));
 
 // Routes
 app.get('/', authMiddleware, (req, res) => {
