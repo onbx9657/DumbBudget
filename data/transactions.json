@@ -1,0 +1,58 @@
+{
+  "2025-01": {
+    "income": [
+      {
+        "id": "25017a98-2a12-4234-a3a4-fd49176f6768",
+        "amount": 2500,
+        "description": "paycheck",
+        "date": "2025-01-02",
+        "timestamp": "2025-01-28T02:38:49.691Z"
+      },
+      {
+        "id": "618f1305-d197-4fbc-ae2e-f44dc2f4691d",
+        "amount": 3000,
+        "description": "paycheck",
+        "date": "2025-01-15",
+        "timestamp": "2025-01-28T02:39:13.506Z"
+      }
+    ],
+    "expenses": [
+      {
+        "id": "eaacb100-42be-46f5-a3b9-9419b16198f5",
+        "amount": 250,
+        "description": "insurance",
+        "date": "2025-01-07",
+        "timestamp": "2025-01-28T02:38:59.463Z",
+        "category": "Bills"
+      },
+      {
+        "id": "1b0a76e8-01c4-402e-be97-386b33f5b96a",
+        "amount": 450,
+        "description": "car payment",
+        "date": "2025-01-20",
+        "timestamp": "2025-01-28T02:39:27.235Z",
+        "category": "Bills"
+      },
+      {
+        "id": "02e448dc-3c63-4c10-bfe2-69dd64748d6f",
+        "amount": 300,
+        "description": "Electric",
+        "date": "2025-01-22",
+        "timestamp": "2025-01-28T02:39:37.573Z",
+        "category": "Bills"
+      }
+    ]
+  },
+  "2024-01": {
+    "income": [
+      {
+        "id": "81fbfd75-3d42-46cf-84f5-04ca4001a468",
+        "amount": 200,
+        "description": "OLDDD",
+        "date": "2024-01-28",
+        "timestamp": "2025-01-28T02:15:48.212Z"
+      }
+    ],
+    "expenses": []
+  }
+}
