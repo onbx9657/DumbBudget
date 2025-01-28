@@ -95,7 +95,7 @@ DumbBudget includes several security features:
 
 - Report bugs by opening an issue
 - Request features through issues
-- Join our community discussions
+- [Join our community discussions](https://discord.gg/zJutzxWyq2)
 
 ---
 Made with ❤️ by [DumbWare.io](https://github.com/DumbWareio)
