@@ -160,7 +160,8 @@ const SUPPORTED_CURRENCIES = {
     CHF: { locale: 'de-CH', symbol: 'CHF' },
     CNY: { locale: 'zh-CN', symbol: '¥' },
     HKD: { locale: 'zh-HK', symbol: 'HK$' },
-    NZD: { locale: 'en-NZ', symbol: 'NZ$' }
+    NZD: { locale: 'en-NZ', symbol: 'NZ$' },
+    MXN: { locale: 'es-MX', symbol: '$' }
 };
 
 let currentCurrency = 'USD'; // Default currency
