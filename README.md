@@ -51,7 +51,6 @@ docker run -d \
 |----------|-------------|----------|---------|---------|
 | `DUMBBUDGET_PIN` | PIN code for accessing the application | Yes | - | `12345` |
 | `PORT` | Port number for the server | No | `3000` | `8080` |
-| `NODE_ENV` | Environment mode | No | `production` | `development` |
 | `CURRENCY` | Currency code for transactions | No | `USD` | `EUR` |
 
 ## Development Setup
