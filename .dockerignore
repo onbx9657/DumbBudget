@@ -30,6 +30,10 @@ Dockerfile
 # Data
 data/
 *.log
+data/transactions.json
+
+# Development config
+nodemon.json
 
 # Documentation
 README.md

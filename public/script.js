@@ -149,11 +149,42 @@ function submitPin(pin, inputs) {
     });
 }
 
-// Shared utility functions
+// Supported currencies list
+const SUPPORTED_CURRENCIES = {
+    USD: { locale: 'en-US', symbol: '$' },
+    EUR: { locale: 'de-DE', symbol: '€' },
+    GBP: { locale: 'en-GB', symbol: '£' },
+    JPY: { locale: 'ja-JP', symbol: '¥' },
+    AUD: { locale: 'en-AU', symbol: 'A$' },
+    CAD: { locale: 'en-CA', symbol: 'C$' },
+    CHF: { locale: 'de-CH', symbol: 'CHF' },
+    CNY: { locale: 'zh-CN', symbol: '¥' },
+    HKD: { locale: 'zh-HK', symbol: 'HK$' },
+    NZD: { locale: 'en-NZ', symbol: 'NZ$' }
+};
+
+let currentCurrency = 'USD'; // Default currency
+
+// Fetch current currency from server
+async function fetchCurrentCurrency() {
+    try {
+        const response = await fetch('/api/settings/currency', fetchConfig);
+        await handleFetchResponse(response);
+        const data = await response.json();
+        currentCurrency = data.currency;
+    } catch (error) {
+        console.error('Error fetching currency:', error);
+        // Fallback to USD if there's an error
+        currentCurrency = 'USD';
+    }
+}
+
+// Update the formatCurrency function to use the current currency
 const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('en-US', {
+    const currencyInfo = SUPPORTED_CURRENCIES[currentCurrency] || SUPPORTED_CURRENCIES.USD;
+    return new Intl.NumberFormat(currencyInfo.locale, {
         style: 'currency',
-        currency: 'USD'
+        currency: currentCurrency
     }).format(amount);
 };
 
@@ -207,18 +238,19 @@ async function loadTransactions() {
         // Sort transactions
         filteredTransactions.sort((a, b) => {
             if (currentSortField === 'date') {
-                const dateA = new Date(a.date);
-                const dateB = new Date(b.date);
-                return currentSortDirection === 'asc' ? dateA - dateB : dateB - dateA;
+                // Use string comparison for dates to avoid timezone issues
+                return currentSortDirection === 'asc' 
+                    ? a.date.localeCompare(b.date) 
+                    : b.date.localeCompare(a.date);
             } else {
                 return currentSortDirection === 'asc' ? a.amount - b.amount : b.amount - a.amount;
             }
         });
             
         transactionsList.innerHTML = filteredTransactions.map(transaction => {
-            // Format the date as M/D/YYYY
-            const date = new Date(transaction.date);
-            const formattedDate = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+            // Split the date string and format as M/D/YYYY without timezone conversion
+            const [year, month, day] = transaction.date.split('-');
+            const formattedDate = `${parseInt(month)}/${parseInt(day)}/${year}`;
             
             return `
             <div class="transaction-item" data-id="${transaction.id}" data-type="${transaction.type}">
@@ -352,8 +384,15 @@ function initModalHandling() {
     const transactionForm = document.getElementById('transactionForm');
     const categoryField = document.getElementById('categoryField');
     const toggleBtns = document.querySelectorAll('.toggle-btn');
+    const amountInput = document.getElementById('amount');
 
     let currentTransactionType = 'income';
+
+    // Update amount input placeholder with current currency symbol
+    function updateAmountPlaceholder() {
+        const currencyInfo = SUPPORTED_CURRENCIES[currentCurrency] || SUPPORTED_CURRENCIES.USD;
+        amountInput.placeholder = `Amount (${currencyInfo.symbol})`;
+    }
 
     // Open modal
     addTransactionBtn.addEventListener('click', () => {
@@ -371,6 +410,9 @@ function initModalHandling() {
         // Set today's date as default
         const today = new Date().toISOString().split('T')[0];
         document.getElementById('transactionDate').value = today;
+
+        // Update amount placeholder with current currency
+        updateAmountPlaceholder();
     });
 
     // Close modal
@@ -453,10 +495,18 @@ function initModalHandling() {
     });
 }
 
-// Add filter button functionality to initMainPage
-function initMainPage() {
+// Update the initMainPage function to fetch currency first
+async function initMainPage() {
+    await fetchCurrentCurrency();
     const mainContainer = document.getElementById('transactionModal');
     if (!mainContainer) return; // Only run on main page
+
+    // Update amount placeholder when currency changes
+    const amountInput = document.getElementById('amount');
+    if (amountInput) {
+        const currencyInfo = SUPPORTED_CURRENCIES[currentCurrency] || SUPPORTED_CURRENCIES.USD;
+        amountInput.placeholder = `Amount (${currencyInfo.symbol})`;
+    }
 
     const startDateInput = document.getElementById('startDate');
     const endDateInput = document.getElementById('endDate');

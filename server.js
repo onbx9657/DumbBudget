@@ -294,8 +294,7 @@ app.post('/api/transactions', authMiddleware, async (req, res) => {
             id: crypto.randomUUID(),
             amount: parseFloat(amount),
             description,
-            date,
-            timestamp: new Date().toISOString()
+            date
         };
 
         if (type === 'expense') {
@@ -583,6 +582,26 @@ app.delete('/api/transactions/:id', authMiddleware, async (req, res) => {
         console.error('Error deleting transaction:', error);
         res.status(500).json({ error: 'Failed to delete transaction' });
     }
+});
+
+// Supported currencies list - must match client-side list
+const SUPPORTED_CURRENCIES = [
+    'USD', 'EUR', 'GBP', 'JPY', 'AUD', 
+    'CAD', 'CHF', 'CNY', 'HKD', 'NZD'
+];
+
+// Get current currency setting
+app.get('/api/settings/currency', authMiddleware, (req, res) => {
+    const currency = process.env.CURRENCY || 'USD';
+    if (!SUPPORTED_CURRENCIES.includes(currency)) {
+        return res.status(200).json({ currency: 'USD' });
+    }
+    res.status(200).json({ currency });
+});
+
+// Get list of supported currencies
+app.get('/api/settings/supported-currencies', authMiddleware, (req, res) => {
+    res.status(200).json({ currencies: SUPPORTED_CURRENCIES });
 });
 
 app.listen(PORT, () => {

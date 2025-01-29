@@ -17,8 +17,23 @@ A simple, secure personal budgeting app with PIN protection. Track your income a
 - 🌓 Light/Dark theme
 - 📤 Export to CSV
 - 🔍 Filter transactions by type
+- 💱 Multi-currency support
 
-## Quick Start
+## Supported Currencies
+
+DumbBudget supports the following currencies:
+- USD (US Dollar) 🇺🇸
+- EUR (Euro) 🇪🇺
+- GBP (British Pound) 🇬🇧
+- JPY (Japanese Yen) 🇯🇵
+- AUD (Australian Dollar) 🇦🇺
+- CAD (Canadian Dollar) 🇨🇦
+- CHF (Swiss Franc) 🇨🇭
+- CNY (Chinese Yuan) 🇨🇳
+- HKD (Hong Kong Dollar) 🇭🇰
+- NZD (New Zealand Dollar) 🇳🇿
+
+Set your preferred currency using the `CURRENCY` environment variable (defaults to USD if not set).
 
 ### Using Docker
 
@@ -26,6 +41,7 @@ A simple, secure personal budgeting app with PIN protection. Track your income a
 docker run -d \
   -p 3000:3000 \
   -e DUMBBUDGET_PIN=12345 \
+  -e CURRENCY=USD \
   dumbwareio/dumbbudget:latest
 ```
 
@@ -36,6 +52,7 @@ docker run -d \
 | `DUMBBUDGET_PIN` | PIN code for accessing the application | Yes | - | `12345` |
 | `PORT` | Port number for the server | No | `3000` | `8080` |
 | `NODE_ENV` | Environment mode | No | `production` | `development` |
+| `CURRENCY` | Currency code for transactions | No | `USD` | `EUR` |
 
 ## Development Setup
 
