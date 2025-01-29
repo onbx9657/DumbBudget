@@ -40,10 +40,13 @@ Set your preferred currency using the `CURRENCY` environment variable (defaults 
 ```bash
 docker run -d \
   -p 3000:3000 \
+  -v /path/to/your/data:/app/data \
   -e DUMBBUDGET_PIN=12345 \
   -e CURRENCY=USD \
   dumbwareio/dumbbudget:latest
 ```
+
+> **Note**: Replace `/path/to/your/data` with the actual path where you want to store your transaction data on the host machine.
 
 ### Environment Variables
 
@@ -86,8 +89,15 @@ npm run dev
 # Build the Docker image
 docker build -t dumbwareio/dumbbudget:latest .
 
+# Create a directory for persistent data
+mkdir -p ~/dumbbudget-data
+
 # Run the container
-docker run -d -p 3000:3000 -e DUMBBUDGET_PIN=12345 dumbwareio/dumbbudget:latest
+docker run -d \
+  -p 3000:3000 \
+  -v ~/dumbbudget-data:/app/data \
+  -e DUMBBUDGET_PIN=12345 \
+  dumbwareio/dumbbudget:latest
 ```
 
 ## Contributing
