@@ -142,8 +142,10 @@ const authMiddleware = (req, res, next) => {
     next();
 };
 
-// Serve static files from public directory
-app.use(express.static('public'));
+// Serve static files EXCEPT index.html
+app.use(express.static('public', {
+    index: false  // Disable serving index.html automatically
+}));
 
 // Routes
 app.get('/', authMiddleware, (req, res) => {

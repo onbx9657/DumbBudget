@@ -34,7 +34,7 @@ function setupPinInputs() {
             // Create PIN input fields
             for (let i = 0; i < pinLength; i++) {
                 const input = document.createElement('input');
-                input.type = 'text';
+                input.type = 'password';
                 input.maxLength = 1;
                 input.className = 'pin-input';
                 input.setAttribute('inputmode', 'numeric');
