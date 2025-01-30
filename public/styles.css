@@ -173,6 +173,7 @@ h3 {
     transition: all var(--transition);
     -webkit-appearance: none;
     -moz-appearance: textfield;
+    appearance: none;
 }
 
 .pin-input-container input.pin-input::-webkit-outer-spin-button,
@@ -276,7 +277,7 @@ header {
 }
 
 .date-input-group input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: var(--text) === '#333' ? none : invert(1);
+    filter: invert(var(--is-dark, 0));
     opacity: 0.5;
     cursor: pointer;
 }
@@ -437,6 +438,15 @@ header {
     justify-content: center;
     transition: all var(--transition);
     opacity: 0.7;
+    min-width: 32px;
+    min-height: 32px;
+}
+
+.currency-sort-symbol {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1;
 }
 
 .sort-btn svg {
@@ -818,6 +828,7 @@ footer {
 
 .amount-input-wrapper input[type=number] {
     -moz-appearance: textfield;
+    appearance: none;
 }
 
 #transactionForm input[type="date"] {
@@ -827,7 +838,7 @@ footer {
 }
 
 #transactionForm input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: var(--text) === '#333' ? none : invert(1);
+    filter: invert(var(--is-dark, 0));
     opacity: 0.5;
     cursor: pointer;
 }

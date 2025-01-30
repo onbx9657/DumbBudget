@@ -31,13 +31,20 @@ async function loadTransactions() {
         await fs.access(TRANSACTIONS_FILE);
         const data = await fs.readFile(TRANSACTIONS_FILE, 'utf8');
         return JSON.parse(data);
-    } catch {
-        // If file doesn't exist, return empty structure
-        return {};
+    } catch (error) {
+        // If file doesn't exist or is invalid, return empty structure
+        return {
+            [new Date().toISOString().slice(0, 7)]: {
+                income: [],
+                expenses: []
+            }
+        };
     }
 }
 
 async function saveTransactions(transactions) {
+    // Ensure data directory exists before saving
+    await ensureDataDir();
     await fs.writeFile(TRANSACTIONS_FILE, JSON.stringify(transactions, null, 2));
 }
 
@@ -247,15 +254,21 @@ async function getTransactionsInRange(startDate, endDate) {
     
     // Collect all transactions within the date range
     Object.values(transactions).forEach(month => {
-        const incomeInRange = month.income.filter(t => 
-            t.date >= startDate && t.date <= endDate
-        ).map(t => ({ ...t, type: 'income' }));
+        // Safely handle income transactions
+        if (month && Array.isArray(month.income)) {
+            const incomeInRange = month.income.filter(t => 
+                t.date >= startDate && t.date <= endDate
+            ).map(t => ({ ...t, type: 'income' }));
+            allTransactions.push(...incomeInRange);
+        }
         
-        const expensesInRange = month.expenses.filter(t => 
-            t.date >= startDate && t.date <= endDate
-        ).map(t => ({ ...t, type: 'expense' }));
-        
-        allTransactions.push(...incomeInRange, ...expensesInRange);
+        // Safely handle expense transactions
+        if (month && Array.isArray(month.expenses)) {
+            const expensesInRange = month.expenses.filter(t => 
+                t.date >= startDate && t.date <= endDate
+            ).map(t => ({ ...t, type: 'expense' }));
+            allTransactions.push(...expensesInRange);
+        }
     });
     
     return allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
@@ -277,16 +290,24 @@ app.post('/api/transactions', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'Category required for expenses' });
         }
 
-        const transactions = await loadTransactions();
+        const transactions = await loadTransactions() || {};
         const [year, month] = date.split('-');
         const key = `${year}-${month}`;
 
-        // Initialize month if it doesn't exist
+        // Initialize month structure if it doesn't exist
         if (!transactions[key]) {
             transactions[key] = {
                 income: [],
                 expenses: []
             };
+        }
+
+        // Ensure arrays exist
+        if (!Array.isArray(transactions[key].income)) {
+            transactions[key].income = [];
+        }
+        if (!Array.isArray(transactions[key].expenses)) {
+            transactions[key].expenses = [];
         }
 
         // Add transaction

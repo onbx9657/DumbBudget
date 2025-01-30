@@ -15,6 +15,7 @@ function initThemeToggle() {
         const newTheme = currentTheme === 'light' ? 'dark' : 'light';
         
         document.documentElement.setAttribute('data-theme', newTheme);
+        document.documentElement.style.setProperty('--is-dark', newTheme === 'dark' ? '1' : '0');
         localStorage.setItem('theme', newTheme);
     });
 }
@@ -161,7 +162,18 @@ const SUPPORTED_CURRENCIES = {
     CNY: { locale: 'zh-CN', symbol: '¥' },
     HKD: { locale: 'zh-HK', symbol: 'HK$' },
     NZD: { locale: 'en-NZ', symbol: 'NZ$' },
-    MXN: { locale: 'es-MX', symbol: '$' }
+    MXN: { locale: 'es-MX', symbol: '$' },
+    RUB: { locale: 'ru-RU', symbol: '₽' },
+    SGD: { locale: 'en-SG', symbol: 'S$' },
+    KRW: { locale: 'ko-KR', symbol: '₩' },
+    INR: { locale: 'en-IN', symbol: '₹' },
+    BRL: { locale: 'pt-BR', symbol: 'R$' },
+    ZAR: { locale: 'en-ZA', symbol: 'R' },
+    TRY: { locale: 'tr-TR', symbol: '₺' },
+    PLN: { locale: 'pl-PL', symbol: 'zł' },
+    SEK: { locale: 'sv-SE', symbol: 'kr' },
+    NOK: { locale: 'nb-NO', symbol: 'kr' },
+    DKK: { locale: 'da-DK', symbol: 'kr' }
 };
 
 let currentCurrency = 'USD'; // Default currency
@@ -502,10 +514,14 @@ async function initMainPage() {
     const mainContainer = document.getElementById('transactionModal');
     if (!mainContainer) return; // Only run on main page
 
+    // Update currency symbols
+    const currencyInfo = SUPPORTED_CURRENCIES[currentCurrency] || SUPPORTED_CURRENCIES.USD;
+    document.querySelector('.currency-sort-symbol').textContent = currencyInfo.symbol;
+    document.querySelector('.currency-symbol').textContent = currencyInfo.symbol;
+
     // Update amount placeholder when currency changes
     const amountInput = document.getElementById('amount');
     if (amountInput) {
-        const currencyInfo = SUPPORTED_CURRENCIES[currentCurrency] || SUPPORTED_CURRENCIES.USD;
         amountInput.placeholder = `Amount (${currencyInfo.symbol})`;
     }
 
