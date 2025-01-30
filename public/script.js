@@ -20,19 +20,33 @@ function initThemeToggle() {
     });
 }
 
+// Debug logging
+function debugLog(...args) {
+    if (window.appConfig?.debug) {
+        console.log('[DEBUG]', ...args);
+    }
+}
+
 // Helper function to join paths with base path
 function joinPath(path) {
     const basePath = window.appConfig?.basePath || '';
+    debugLog('joinPath input:', path);
+    debugLog('basePath:', basePath);
+    
     // If path starts with http(s), return as is
     if (path.match(/^https?:\/\//)) {
+        debugLog('Absolute URL detected, returning as is:', path);
         return path;
     }
-    // If path starts with /, join with basePath
-    if (path.startsWith('/')) {
-        return `${basePath}${path}`;
-    }
-    // Otherwise join with / in between
-    return `${basePath}/${path}`.replace(/\/+/g, '/');
+    
+    // Remove any leading slash from path and trailing slash from basePath
+    const cleanPath = path.replace(/^\/+/, '');
+    const cleanBase = basePath.replace(/\/+$/, '');
+    
+    // Join with single slash
+    const result = cleanBase ? `${cleanBase}/${cleanPath}` : cleanPath;
+    debugLog('joinPath result:', result);
+    return result;
 }
 
 // PIN input functionality
@@ -40,11 +54,13 @@ function setupPinInputs() {
     const form = document.getElementById('pinForm');
     if (!form) return; // Only run on login page
 
+    debugLog('Setting up PIN inputs');
     // Fetch PIN length from server
     fetch(joinPath('pin-length'))
         .then(response => response.json())
         .then(data => {
             const pinLength = data.length;
+            debugLog('PIN length:', pinLength);
             const container = document.querySelector('.pin-input-container');
             
             // Create PIN input fields
@@ -118,8 +134,9 @@ function setupPinInputs() {
         });
 }
 
-// Handle PIN submission
+// Handle PIN submission with debug logging
 function submitPin(pin, inputs) {
+    debugLog('Submitting PIN');
     const errorElement = document.querySelector('.pin-error');
     
     fetch(joinPath('verify-pin'), {
@@ -131,10 +148,13 @@ function submitPin(pin, inputs) {
     })
     .then(async response => {
         const data = await response.json();
+        debugLog('PIN verification response:', response.status);
         
         if (response.ok) {
+            debugLog('PIN verified, redirecting to home');
             window.location.pathname = joinPath('/');
         } else if (response.status === 429) {
+            debugLog('Account locked out');
             // Handle lockout
             errorElement.textContent = data.error;
             errorElement.setAttribute('aria-hidden', 'false');
@@ -160,6 +180,7 @@ function submitPin(pin, inputs) {
     })
     .catch(error => {
         console.error('Error:', error);
+        debugLog('PIN verification error:', error);
         errorElement.textContent = 'An error occurred. Please try again.';
         errorElement.setAttribute('aria-hidden', 'false');
     });
@@ -196,12 +217,15 @@ let currentCurrency = 'USD'; // Default currency
 // Fetch current currency from server
 async function fetchCurrentCurrency() {
     try {
-        const response = await fetch('/api/settings/currency', fetchConfig);
+        debugLog('Fetching current currency');
+        const response = await fetch(joinPath('api/settings/currency'), fetchConfig);
         await handleFetchResponse(response);
         const data = await response.json();
         currentCurrency = data.currency;
+        debugLog('Current currency set to:', currentCurrency);
     } catch (error) {
         console.error('Error fetching currency:', error);
+        debugLog('Falling back to USD');
         // Fallback to USD if there's an error
         currentCurrency = 'USD';
     }
@@ -218,7 +242,7 @@ const formatCurrency = (amount) => {
 
 let currentDate = new Date();
 
-// Shared fetch configuration
+// Shared fetch configuration with debug logging
 const fetchConfig = {
     credentials: 'include',
     headers: {
@@ -228,9 +252,11 @@ const fetchConfig = {
 
 // Handle session errors - only for main app, not login
 async function handleFetchResponse(response) {
+    debugLog('Fetch response:', response.status, response.url);
     if (!response.ok) {
         if (response.status === 401 && !window.location.pathname.includes('login')) {
-            window.location.pathname = '/login';
+            debugLog('Unauthorized, redirecting to login');
+            window.location.pathname = joinPath('login');
             return null;
         }
         throw new Error(`HTTP error! status: ${response.status}`);

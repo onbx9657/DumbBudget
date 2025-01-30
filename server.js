@@ -18,15 +18,30 @@ const PIN = process.env[`${projectName}_PIN`];
 const DATA_DIR = path.join(__dirname, 'data');
 const TRANSACTIONS_FILE = path.join(DATA_DIR, 'transactions.json');
 
-// Extract base path from BASE_URL environment variable
+// Debug logging setup
+const DEBUG = process.env.DEBUG === 'TRUE';
+function debugLog(...args) {
+    if (DEBUG) {
+        console.log('[DEBUG]', ...args);
+    }
+}
+
+// Add logging to BASE_PATH extraction
 const BASE_PATH = (() => {
-    if (!process.env.BASE_URL) return '';
+    if (!process.env.BASE_URL) {
+        debugLog('No BASE_URL set, using empty base path');
+        return '';
+    }
     try {
         const url = new URL(process.env.BASE_URL);
-        return url.pathname.replace(/\/$/, ''); // Remove trailing slash
+        const path = url.pathname.replace(/\/$/, ''); // Remove trailing slash
+        debugLog('Extracted base path:', path);
+        return path;
     } catch {
         // If BASE_URL is just a path (e.g. /budget)
-        return process.env.BASE_URL.replace(/\/$/, '');
+        const path = process.env.BASE_URL.replace(/\/$/, '');
+        debugLog('Using BASE_URL as path:', path);
+        return path;
     }
 })();
 
@@ -147,17 +162,21 @@ function verifyPin(storedPin, providedPin) {
     }
 }
 
-// Authentication middleware
+// Add logging to authentication middleware
 const authMiddleware = (req, res, next) => {
+    debugLog('Auth middleware for path:', req.path);
     // If no PIN is set, bypass authentication
     if (!PIN || PIN.trim() === '') {
+        debugLog('PIN protection disabled, bypassing auth');
         return next();
     }
 
     // Check if user is authenticated via session
     if (!req.session.authenticated) {
-        return res.redirect('/login');
+        debugLog('User not authenticated, redirecting to login');
+        return res.redirect(BASE_PATH + '/login');
     }
+    debugLog('User authenticated, proceeding');
     next();
 };
 
@@ -633,15 +652,20 @@ app.get(BASE_PATH + '/api/settings/supported-currencies', authMiddleware, (req, 
     res.status(200).json({ currencies: SUPPORTED_CURRENCIES });
 });
 
-// Config endpoint
+// Add logging to config endpoint
 app.get(BASE_PATH + '/config.js', (req, res) => {
+    debugLog('Serving config.js with BASE_PATH:', BASE_PATH);
     res.type('application/javascript').send(`
         window.appConfig = {
-            basePath: '${BASE_PATH}'
+            basePath: '${BASE_PATH}',
+            debug: ${DEBUG}
         };
     `);
 });
 
+// Add logging to server startup
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    debugLog('Debug mode enabled');
+    debugLog('Base path:', BASE_PATH);
 }); 
