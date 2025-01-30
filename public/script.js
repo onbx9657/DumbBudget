@@ -280,7 +280,7 @@ async function loadTransactions() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         
-        const response = await fetch(`/api/transactions/range?start=${startDate}&end=${endDate}`, fetchConfig);
+        const response = await fetch(joinPath(`api/transactions/range?start=${startDate}&end=${endDate}`), fetchConfig);
         await handleFetchResponse(response);
         const transactions = await response.json();
         
@@ -348,7 +348,7 @@ async function loadTransactions() {
                 if (confirm('Are you sure you want to delete this transaction?')) {
                     const id = item.dataset.id;
                     try {
-                        const response = await fetch(`/api/transactions/${id}`, {
+                        const response = await fetch(joinPath(`api/transactions/${id}`), {
                             ...fetchConfig,
                             method: 'DELETE'
                         });
@@ -406,7 +406,7 @@ async function updateTotals() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         
-        const response = await fetch(`/api/totals/range?start=${startDate}&end=${endDate}`, fetchConfig);
+        const response = await fetch(joinPath(`api/totals/range?start=${startDate}&end=${endDate}`), fetchConfig);
         await handleFetchResponse(response);
         const totals = await response.json();
         
@@ -515,8 +515,8 @@ function initModalHandling() {
 
         try {
             const url = editingTransactionId 
-                ? `/api/transactions/${editingTransactionId}`
-                : '/api/transactions';
+                ? joinPath(`api/transactions/${editingTransactionId}`)
+                : joinPath('api/transactions');
                 
             const method = editingTransactionId ? 'PUT' : 'POST';
 
@@ -600,7 +600,7 @@ async function initMainPage() {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
             
-            const response = await fetch(`/api/export/range?start=${startDate}&end=${endDate}`, {
+            const response = await fetch(joinPath(`api/export/range?start=${startDate}&end=${endDate}`), {
                 ...fetchConfig,
                 method: 'GET'
             });
