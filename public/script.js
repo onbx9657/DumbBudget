@@ -182,7 +182,8 @@ const SUPPORTED_CURRENCIES = {
     PLN: { locale: 'pl-PL', symbol: 'zł' },
     SEK: { locale: 'sv-SE', symbol: 'kr' },
     NOK: { locale: 'nb-NO', symbol: 'kr' },
-    DKK: { locale: 'da-DK', symbol: 'kr' }
+    DKK: { locale: 'da-DK', symbol: 'kr' },
+    ZAR: { locale: 'en-ZA', symbol: 'R' }
 };
 
 let currentCurrency = 'USD'; // Default currency
