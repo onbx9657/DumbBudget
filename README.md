@@ -38,6 +38,12 @@ DumbBudget supports the following currencies:
 - KRW (South Korean Won) 🇰🇷
 - INR (Indian Rupee) 🇮🇳
 - BRL (Brazilian Real) 🇧🇷
+- ZAR (South African Rand) 🇿🇦
+- TRY (Turkish Lira) 🇹🇷  
+- PLN (Polish Złoty) 🇵🇱  
+- SEK (Swedish Krona) 🇸🇪  
+- NOK (Norwegian Krone) 🇳🇴  
+- DKK (Danish Krone) 🇩🇰  
 
 Set your preferred currency using the `CURRENCY` environment variable (defaults to USD if not set).
 

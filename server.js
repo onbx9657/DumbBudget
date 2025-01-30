@@ -1,4 +1,4 @@
-require('dotenv').config();
+const dotenv = require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const helmet = require('helmet');
@@ -622,7 +622,10 @@ app.delete('/api/transactions/:id', authMiddleware, async (req, res) => {
 // Supported currencies list - must match client-side list
 const SUPPORTED_CURRENCIES = [
     'USD', 'EUR', 'GBP', 'JPY', 'AUD', 
-    'CAD', 'CHF', 'CNY', 'HKD', 'NZD'
+    'CAD', 'CHF', 'CNY', 'HKD', 'NZD',
+    'MXN', 'RUB', 'SGD', 'KRW', 'INR',
+    'BRL', 'ZAR', 'TRY', 'PLN', 'SEK',
+    'NOK', 'DKK'
 ];
 
 // Get current currency setting
