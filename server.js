@@ -11,16 +11,6 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
-// Extract the base path from BASE_URL
-const BASE_PATH = (() => {
-    try {
-        const url = new URL(BASE_URL);
-        return url.pathname.replace(/\/$/, ''); // Remove trailing slash
-    } catch {
-        return '';
-    }
-})();
-
 // Get the project name from package.json to use for the PIN environment variable
 const projectName = require('./package.json').name.toUpperCase().replace(/-/g, '_');
 const PIN = process.env[`${projectName}_PIN`];
@@ -173,29 +163,29 @@ app.use((req, res, next) => {
     next();
 });
 
-// Serve static files under the base path
-app.use(BASE_PATH, express.static('public', {
+// Serve static files EXCEPT index.html
+app.use(express.static('public', {
     index: false  // Disable serving index.html automatically
 }));
 
 // Routes
-app.get(BASE_PATH + '/', authMiddleware, (req, res) => {
+app.get('/', authMiddleware, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get(BASE_PATH + '/login', (req, res) => {
+app.get('/login', (req, res) => {
     // If no PIN is set, redirect to index
     if (!PIN || PIN.trim() === '') {
-        return res.redirect(BASE_PATH + '/');
+        return res.redirect('/');
     }
 
     if (req.session.authenticated) {
-        return res.redirect(BASE_PATH + '/');
+        return res.redirect('/');
     }
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-app.get(BASE_PATH + '/pin-length', (req, res) => {
+app.get('/pin-length', (req, res) => {
     // If no PIN is set, return 0 length
     if (!PIN || PIN.trim() === '') {
         return res.json({ length: 0 });
@@ -203,7 +193,7 @@ app.get(BASE_PATH + '/pin-length', (req, res) => {
     res.json({ length: PIN.length });
 });
 
-app.post(BASE_PATH + '/verify-pin', (req, res) => {
+app.post('/verify-pin', (req, res) => {
     // If no PIN is set, authentication is successful
     if (!PIN || PIN.trim() === '') {
         req.session.authenticated = true;
@@ -299,7 +289,7 @@ async function getTransactionsInRange(startDate, endDate) {
 }
 
 // API Endpoints
-app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
+app.post('/api/transactions', authMiddleware, async (req, res) => {
     try {
         const { type, amount, description, category, date } = req.body;
         
@@ -357,7 +347,7 @@ app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
     }
 });
 
-app.get(BASE_PATH + '/api/transactions/:year/:month', authMiddleware, async (req, res) => {
+app.get('/api/transactions/:year/:month', authMiddleware, async (req, res) => {
     try {
         const { year, month } = req.params;
         const key = `${year}-${month.padStart(2, '0')}`;
@@ -378,7 +368,7 @@ app.get(BASE_PATH + '/api/transactions/:year/:month', authMiddleware, async (req
     }
 });
 
-app.get(BASE_PATH + '/api/totals/:year/:month', authMiddleware, async (req, res) => {
+app.get('/api/totals/:year/:month', authMiddleware, async (req, res) => {
     try {
         const { year, month } = req.params;
         const key = `${year}-${month.padStart(2, '0')}`;
@@ -401,7 +391,7 @@ app.get(BASE_PATH + '/api/totals/:year/:month', authMiddleware, async (req, res)
     }
 });
 
-app.get(BASE_PATH + '/api/transactions/range', authMiddleware, async (req, res) => {
+app.get('/api/transactions/range', authMiddleware, async (req, res) => {
     try {
         const { start, end } = req.query;
         if (!start || !end) {
@@ -416,7 +406,7 @@ app.get(BASE_PATH + '/api/transactions/range', authMiddleware, async (req, res) 
     }
 });
 
-app.get(BASE_PATH + '/api/totals/range', authMiddleware, async (req, res) => {
+app.get('/api/totals/range', authMiddleware, async (req, res) => {
     try {
         const { start, end } = req.query;
         if (!start || !end) {
@@ -444,7 +434,7 @@ app.get(BASE_PATH + '/api/totals/range', authMiddleware, async (req, res) => {
     }
 });
 
-app.get(BASE_PATH + '/api/export/:year/:month', authMiddleware, async (req, res) => {
+app.get('/api/export/:year/:month', authMiddleware, async (req, res) => {
     try {
         const { year, month } = req.params;
         const key = `${year}-${month.padStart(2, '0')}`;
@@ -473,7 +463,7 @@ app.get(BASE_PATH + '/api/export/:year/:month', authMiddleware, async (req, res)
     }
 });
 
-app.get(BASE_PATH + '/api/export/range', authMiddleware, async (req, res) => {
+app.get('/api/export/range', authMiddleware, async (req, res) => {
     try {
         const { start, end } = req.query;
         if (!start || !end) {
@@ -503,7 +493,7 @@ app.get(BASE_PATH + '/api/export/range', authMiddleware, async (req, res) => {
     }
 });
 
-app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) => {
+app.put('/api/transactions/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { type, amount, description, category, date } = req.body;
@@ -590,7 +580,7 @@ app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) =>
     }
 });
 
-app.delete(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) => {
+app.delete('/api/transactions/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const transactions = await loadTransactions();
@@ -636,7 +626,7 @@ const SUPPORTED_CURRENCIES = [
 ];
 
 // Get current currency setting
-app.get(BASE_PATH + '/api/settings/currency', authMiddleware, (req, res) => {
+app.get('/api/settings/currency', authMiddleware, (req, res) => {
     const currency = process.env.CURRENCY || 'USD';
     if (!SUPPORTED_CURRENCIES.includes(currency)) {
         return res.status(200).json({ currency: 'USD' });
@@ -645,7 +635,7 @@ app.get(BASE_PATH + '/api/settings/currency', authMiddleware, (req, res) => {
 });
 
 // Get list of supported currencies
-app.get(BASE_PATH + '/api/settings/supported-currencies', authMiddleware, (req, res) => {
+app.get('/api/settings/supported-currencies', authMiddleware, (req, res) => {
     res.status(200).json({ currencies: SUPPORTED_CURRENCIES });
 });
 

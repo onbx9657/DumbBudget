@@ -62,7 +62,7 @@ docker run -d \
 | `DUMBBUDGET_PIN` | PIN code for accessing the application | Yes | - | `12345` |
 | `PORT` | Port number for the server | No | `3000` | `8080` |
 | `CURRENCY` | Currency code for transactions | No | `USD` | `EUR` |
-| `BASE_URL` | Base URL for the application. Can include a path (e.g. for reverse proxy setups). | No | `http://localhost:PORT` | `https://example.com/budget` |
+| `BASE_URL` | Base URL for the application | No | `http://localhost:PORT` | `https://budget.example.com` |
 
 ## Development Setup
 
