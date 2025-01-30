@@ -18,6 +18,18 @@ const PIN = process.env[`${projectName}_PIN`];
 const DATA_DIR = path.join(__dirname, 'data');
 const TRANSACTIONS_FILE = path.join(DATA_DIR, 'transactions.json');
 
+// Extract base path from BASE_URL environment variable
+const BASE_PATH = (() => {
+    if (!process.env.BASE_URL) return '';
+    try {
+        const url = new URL(process.env.BASE_URL);
+        return url.pathname.replace(/\/$/, ''); // Remove trailing slash
+    } catch {
+        // If BASE_URL is just a path (e.g. /budget)
+        return process.env.BASE_URL.replace(/\/$/, '');
+    }
+})();
+
 async function ensureDataDir() {
     try {
         await fs.access(DATA_DIR);
@@ -149,29 +161,25 @@ const authMiddleware = (req, res, next) => {
     next();
 };
 
-// Serve static files EXCEPT index.html
-app.use(express.static('public', {
-    index: false  // Disable serving index.html automatically
-}));
+// Mount all routes under BASE_PATH
+app.use(BASE_PATH, express.static('public', { index: false }));
 
 // Routes
-app.get('/', authMiddleware, (req, res) => {
+app.get(BASE_PATH + '/', authMiddleware, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/login', (req, res) => {
-    // If no PIN is set, redirect to index
+app.get(BASE_PATH + '/login', (req, res) => {
     if (!PIN || PIN.trim() === '') {
-        return res.redirect('/');
+        return res.redirect(BASE_PATH + '/');
     }
-
     if (req.session.authenticated) {
-        return res.redirect('/');
+        return res.redirect(BASE_PATH + '/');
     }
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-app.get('/pin-length', (req, res) => {
+app.get(BASE_PATH + '/pin-length', (req, res) => {
     // If no PIN is set, return 0 length
     if (!PIN || PIN.trim() === '') {
         return res.json({ length: 0 });
@@ -623,6 +631,15 @@ app.get('/api/settings/currency', authMiddleware, (req, res) => {
 // Get list of supported currencies
 app.get('/api/settings/supported-currencies', authMiddleware, (req, res) => {
     res.status(200).json({ currencies: SUPPORTED_CURRENCIES });
+});
+
+// Add a simple config endpoint
+app.get(BASE_PATH + '/config.js', (req, res) => {
+    res.type('application/javascript').send(`
+        window.appConfig = {
+            basePath: '${BASE_PATH}'
+        };
+    `);
 });
 
 app.listen(PORT, () => {

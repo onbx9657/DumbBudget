@@ -20,13 +20,19 @@ function initThemeToggle() {
     });
 }
 
+// Helper function to join paths with base path
+function joinPath(path) {
+    const basePath = window.appConfig?.basePath || '';
+    return `${basePath}/${path}`.replace(/\/+/g, '/');
+}
+
 // PIN input functionality
 function setupPinInputs() {
     const form = document.getElementById('pinForm');
     if (!form) return; // Only run on login page
 
     // Fetch PIN length from server
-    fetch('/pin-length')  // Remove fetchConfig for this public endpoint
+    fetch(joinPath('pin-length'))
         .then(response => response.json())
         .then(data => {
             const pinLength = data.length;
@@ -107,7 +113,7 @@ function setupPinInputs() {
 function submitPin(pin, inputs) {
     const errorElement = document.querySelector('.pin-error');
     
-    fetch('/verify-pin', {
+    fetch(joinPath('verify-pin'), {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -118,7 +124,7 @@ function submitPin(pin, inputs) {
         const data = await response.json();
         
         if (response.ok) {
-            window.location.pathname = '/';
+            window.location.pathname = joinPath('/');
         } else if (response.status === 429) {
             // Handle lockout
             errorElement.textContent = data.error;
