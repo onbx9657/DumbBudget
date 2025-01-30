@@ -9,6 +9,7 @@ const fs = require('fs').promises;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
 // Get the project name from package.json to use for the PIN environment variable
 const projectName = require('./package.json').name.toUpperCase().replace(/-/g, '_');
@@ -148,6 +149,19 @@ const authMiddleware = (req, res, next) => {
     }
     next();
 };
+
+// Middleware to inject BASE_URL into HTML responses
+app.use((req, res, next) => {
+    const originalSend = res.send;
+    res.send = function(body) {
+        if (typeof body === 'string' && body.includes('</head>')) {
+            const baseUrlMeta = `<meta name="base-url" content="${BASE_URL}">`;
+            body = body.replace('</head>', `${baseUrlMeta}</head>`);
+        }
+        return originalSend.call(this, body);
+    };
+    next();
+});
 
 // Serve static files EXCEPT index.html
 app.use(express.static('public', {

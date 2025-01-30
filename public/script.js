@@ -1,4 +1,13 @@
 // Theme toggle functionality
+function getBaseUrl() {
+    // First try to get it from the server-provided meta tag
+    const metaBaseUrl = document.querySelector('meta[name="base-url"]')?.content;
+    if (metaBaseUrl) return metaBaseUrl;
+    
+    // Fallback to window.location.origin
+    return window.location.origin;
+}
+
 function initThemeToggle() {
     const themeToggle = document.getElementById('themeToggle');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
@@ -26,7 +35,7 @@ function setupPinInputs() {
     if (!form) return; // Only run on login page
 
     // Fetch PIN length from server
-    fetch('/pin-length')  // Remove fetchConfig for this public endpoint
+    fetch(`${getBaseUrl()}/pin-length`)  // Updated to use base URL
         .then(response => response.json())
         .then(data => {
             const pinLength = data.length;
@@ -107,7 +116,7 @@ function setupPinInputs() {
 function submitPin(pin, inputs) {
     const errorElement = document.querySelector('.pin-error');
     
-    fetch('/verify-pin', {
+    fetch(`${getBaseUrl()}/verify-pin`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -181,7 +190,7 @@ let currentCurrency = 'USD'; // Default currency
 // Fetch current currency from server
 async function fetchCurrentCurrency() {
     try {
-        const response = await fetch('/api/settings/currency', fetchConfig);
+        const response = await fetch(`${getBaseUrl()}/api/settings/currency`, fetchConfig);
         await handleFetchResponse(response);
         const data = await response.json();
         currentCurrency = data.currency;
@@ -239,7 +248,7 @@ async function loadTransactions() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         
-        const response = await fetch(`/api/transactions/range?start=${startDate}&end=${endDate}`, fetchConfig);
+        const response = await fetch(`${getBaseUrl()}/api/transactions/range?start=${startDate}&end=${endDate}`, fetchConfig);
         await handleFetchResponse(response);
         const transactions = await response.json();
         
@@ -307,7 +316,7 @@ async function loadTransactions() {
                 if (confirm('Are you sure you want to delete this transaction?')) {
                     const id = item.dataset.id;
                     try {
-                        const response = await fetch(`/api/transactions/${id}`, {
+                        const response = await fetch(`${getBaseUrl()}/api/transactions/${id}`, {
                             ...fetchConfig,
                             method: 'DELETE'
                         });
@@ -365,7 +374,7 @@ async function updateTotals() {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
         
-        const response = await fetch(`/api/totals/range?start=${startDate}&end=${endDate}`, fetchConfig);
+        const response = await fetch(`${getBaseUrl()}/api/totals/range?start=${startDate}&end=${endDate}`, fetchConfig);
         await handleFetchResponse(response);
         const totals = await response.json();
         
@@ -474,8 +483,8 @@ function initModalHandling() {
 
         try {
             const url = editingTransactionId 
-                ? `/api/transactions/${editingTransactionId}`
-                : '/api/transactions';
+                ? `${getBaseUrl()}/api/transactions/${editingTransactionId}`
+                : `${getBaseUrl()}/api/transactions`;
                 
             const method = editingTransactionId ? 'PUT' : 'POST';
 
@@ -559,7 +568,7 @@ async function initMainPage() {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
             
-            const response = await fetch(`/api/export/range?start=${startDate}&end=${endDate}`, {
+            const response = await fetch(`${getBaseUrl()}/api/export/range?start=${startDate}&end=${endDate}`, {
                 ...fetchConfig,
                 method: 'GET'
             });
