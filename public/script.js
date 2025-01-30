@@ -23,6 +23,15 @@ function initThemeToggle() {
 // Helper function to join paths with base path
 function joinPath(path) {
     const basePath = window.appConfig?.basePath || '';
+    // If path starts with http(s), return as is
+    if (path.match(/^https?:\/\//)) {
+        return path;
+    }
+    // If path starts with /, join with basePath
+    if (path.startsWith('/')) {
+        return `${basePath}${path}`;
+    }
+    // Otherwise join with / in between
     return `${basePath}/${path}`.replace(/\/+/g, '/');
 }
 
