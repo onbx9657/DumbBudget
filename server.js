@@ -1,4 +1,4 @@
-require('dotenv').config();
+const dotenv = require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const helmet = require('helmet');
@@ -9,6 +9,7 @@ const fs = require('fs').promises;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
 
 // Get the project name from package.json to use for the PIN environment variable
 const projectName = require('./package.json').name.toUpperCase().replace(/-/g, '_');
@@ -635,7 +636,10 @@ app.delete(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res)
 // Supported currencies list - must match client-side list
 const SUPPORTED_CURRENCIES = [
     'USD', 'EUR', 'GBP', 'JPY', 'AUD', 
-    'CAD', 'CHF', 'CNY', 'HKD', 'NZD'
+    'CAD', 'CHF', 'CNY', 'HKD', 'NZD',
+    'MXN', 'RUB', 'SGD', 'KRW', 'INR',
+    'BRL', 'ZAR', 'TRY', 'PLN', 'SEK',
+    'NOK', 'DKK'
 ];
 
 // Get current currency setting

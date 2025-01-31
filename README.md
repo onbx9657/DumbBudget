@@ -33,6 +33,17 @@ DumbBudget supports the following currencies:
 - HKD (Hong Kong Dollar) 🇭🇰
 - NZD (New Zealand Dollar) 🇳🇿
 - MXN (Mexican Peso) 🇲🇽
+- RUB (Russian Ruble) 🇷🇺
+- SGD (Singapore Dollar) 🇸🇬
+- KRW (South Korean Won) 🇰🇷
+- INR (Indian Rupee) 🇮🇳
+- BRL (Brazilian Real) 🇧🇷
+- ZAR (South African Rand) 🇿🇦
+- TRY (Turkish Lira) 🇹🇷  
+- PLN (Polish Złoty) 🇵🇱  
+- SEK (Swedish Krona) 🇸🇪  
+- NOK (Norwegian Krone) 🇳🇴  
+- DKK (Danish Krone) 🇩🇰  
 
 Set your preferred currency using the `CURRENCY` environment variable (defaults to USD if not set).
 
@@ -44,6 +55,7 @@ docker run -d \
   -v /path/to/your/data:/app/data \
   -e DUMBBUDGET_PIN=12345 \
   -e CURRENCY=USD \
+  -e BASE_URL=http://localhost:3000 \
   dumbwareio/dumbbudget:latest
 ```
 
@@ -56,6 +68,7 @@ docker run -d \
 | `DUMBBUDGET_PIN` | PIN code for accessing the application | Yes | - | `12345` |
 | `PORT` | Port number for the server | No | `3000` | `8080` |
 | `CURRENCY` | Currency code for transactions | No | `USD` | `EUR` |
+| `BASE_URL` | Base URL for the application | No | `http://localhost:PORT` | `https://budget.example.com` |
 
 ## Development Setup
 
@@ -75,6 +88,8 @@ npm install
 DUMBBUDGET_PIN=12345
 PORT=3000
 NODE_ENV=development
+BASE_URL=http://localhost:3000
+CURRENCY=USD
 ```
 
 4. Start the development server:
@@ -98,6 +113,7 @@ docker run -d \
   -p 3000:3000 \
   -v ~/dumbbudget-data:/app/data \
   -e DUMBBUDGET_PIN=12345 \
+  -e BASE_URL=http://localhost:3000 \
   dumbwareio/dumbbudget:latest
 ```
 

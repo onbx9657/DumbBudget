@@ -1,4 +1,13 @@
 // Theme toggle functionality
+function getBaseUrl() {
+    // First try to get it from the server-provided meta tag
+    const metaBaseUrl = document.querySelector('meta[name="base-url"]')?.content;
+    if (metaBaseUrl) return metaBaseUrl;
+    
+    // Fallback to window.location.origin
+    return window.location.origin;
+}
+
 function initThemeToggle() {
     const themeToggle = document.getElementById('themeToggle');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
@@ -56,7 +65,9 @@ function setupPinInputs() {
 
     debugLog('Setting up PIN inputs');
     // Fetch PIN length from server
+
     fetch(joinPath('pin-length'))
+
         .then(response => response.json())
         .then(data => {
             const pinLength = data.length;
@@ -139,7 +150,9 @@ function submitPin(pin, inputs) {
     debugLog('Submitting PIN');
     const errorElement = document.querySelector('.pin-error');
     
+
     fetch(joinPath('verify-pin'), {
+
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
@@ -279,7 +292,6 @@ async function loadTransactions() {
     try {
         const startDate = document.getElementById('startDate').value;
         const endDate = document.getElementById('endDate').value;
-        
         const response = await fetch(joinPath(`api/transactions/range?start=${startDate}&end=${endDate}`), fetchConfig);
         await handleFetchResponse(response);
         const transactions = await response.json();
@@ -409,7 +421,6 @@ async function updateTotals() {
         const response = await fetch(joinPath(`api/totals/range?start=${startDate}&end=${endDate}`), fetchConfig);
         await handleFetchResponse(response);
         const totals = await response.json();
-        
         document.getElementById('totalIncome').textContent = formatCurrency(totals.income);
         document.getElementById('totalExpenses').textContent = formatCurrency(totals.expenses);
         const balanceElement = document.getElementById('totalBalance');
@@ -512,7 +523,6 @@ function initModalHandling() {
             category: currentTransactionType === 'expense' ? document.getElementById('category').value : null,
             date: document.getElementById('transactionDate').value,
         };
-
         try {
             const url = editingTransactionId 
                 ? joinPath(`api/transactions/${editingTransactionId}`)
@@ -599,7 +609,6 @@ async function initMainPage() {
         try {
             const startDate = document.getElementById('startDate').value;
             const endDate = document.getElementById('endDate').value;
-            
             const response = await fetch(joinPath(`api/export/range?start=${startDate}&end=${endDate}`), {
                 ...fetchConfig,
                 method: 'GET'
