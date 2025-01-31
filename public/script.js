@@ -58,6 +58,20 @@ function joinPath(path) {
     return result;
 }
 
+// Fetch config with instance name
+async function updateInstanceName() {
+    try {
+        const res = await fetch(joinPath('api/config'), fetchConfig);
+        const data = await res.json();
+        document.title = data.instanceName;
+        document.getElementById('instance-name').textContent = data.instanceName;
+    } catch (error) {
+        console.error('Error fetching instance name, falling back to default. Error: ', error);
+        document.title = 'DumbBudget';
+        document.getElementById('instance-name').textContent = 'DumbBudget';
+    }
+}
+
 // PIN input functionality
 function setupPinInputs() {
     const form = document.getElementById('pinForm');
@@ -691,4 +705,5 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPinInputs();
     initModalHandling();
     initMainPage();
+    updateInstanceName();
 }); 
