@@ -4,9 +4,12 @@ on:
   push:
     branches:
       - main
+      - testing
+      
   pull_request:
     branches:
       - main
+      - testing
 
 env:
   DOCKER_IMAGE: dumbwareio/dumbbudget
@@ -25,10 +28,19 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
+      - name: Set Docker tags
+        id: docker_meta
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "DOCKER_TAGS=${DOCKER_IMAGE}:latest" >> $GITHUB_ENV
+          elif [ "${{ github.ref }}" = "refs/heads/testing" ]; then
+            echo "DOCKER_TAGS=${DOCKER_IMAGE}:testing" >> $GITHUB_ENV
+          fi
+
       - name: Build Docker Image
         run: |
-          docker build -t dumbwareio/dumbbudget:latest .
+          docker build -t ${{ env.DOCKER_TAGS }} .
 
       - name: Push Docker Image
         run: |
-          docker push dumbwareio/dumbbudget:latest 
+          docker push ${{ env.DOCKER_TAGS }} 

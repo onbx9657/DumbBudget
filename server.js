@@ -19,6 +19,33 @@ const PIN = process.env[`${projectName}_PIN`];
 const DATA_DIR = path.join(__dirname, 'data');
 const TRANSACTIONS_FILE = path.join(DATA_DIR, 'transactions.json');
 
+// Debug logging setup
+const DEBUG = process.env.DEBUG === 'TRUE';
+function debugLog(...args) {
+    if (DEBUG) {
+        console.log('[DEBUG]', ...args);
+    }
+}
+
+// Add logging to BASE_PATH extraction
+const BASE_PATH = (() => {
+    if (!process.env.BASE_URL) {
+        debugLog('No BASE_URL set, using empty base path');
+        return '';
+    }
+    try {
+        const url = new URL(process.env.BASE_URL);
+        const path = url.pathname.replace(/\/$/, ''); // Remove trailing slash
+        debugLog('Extracted base path:', path);
+        return path;
+    } catch {
+        // If BASE_URL is just a path (e.g. /budget)
+        const path = process.env.BASE_URL.replace(/\/$/, '');
+        debugLog('Using BASE_URL as path:', path);
+        return path;
+    }
+})();
+
 async function ensureDataDir() {
     try {
         await fs.access(DATA_DIR);
@@ -136,56 +163,43 @@ function verifyPin(storedPin, providedPin) {
     }
 }
 
-// Authentication middleware
+// Add logging to authentication middleware
 const authMiddleware = (req, res, next) => {
+    debugLog('Auth middleware for path:', req.path);
     // If no PIN is set, bypass authentication
     if (!PIN || PIN.trim() === '') {
+        debugLog('PIN protection disabled, bypassing auth');
         return next();
     }
 
     // Check if user is authenticated via session
     if (!req.session.authenticated) {
-        return res.redirect('/login');
+        debugLog('User not authenticated, redirecting to login');
+        return res.redirect(BASE_PATH + '/login');
     }
+    debugLog('User authenticated, proceeding');
     next();
 };
 
-// Middleware to inject BASE_URL into HTML responses
-app.use((req, res, next) => {
-    const originalSend = res.send;
-    res.send = function(body) {
-        if (typeof body === 'string' && body.includes('</head>')) {
-            const baseUrlMeta = `<meta name="base-url" content="${BASE_URL}">`;
-            body = body.replace('</head>', `${baseUrlMeta}</head>`);
-        }
-        return originalSend.call(this, body);
-    };
-    next();
-});
-
-// Serve static files EXCEPT index.html
-app.use(express.static('public', {
-    index: false  // Disable serving index.html automatically
-}));
+// Mount all routes under BASE_PATH
+app.use(BASE_PATH, express.static('public', { index: false }));
 
 // Routes
-app.get('/', authMiddleware, (req, res) => {
+app.get(BASE_PATH + '/', authMiddleware, (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.get('/login', (req, res) => {
-    // If no PIN is set, redirect to index
+app.get(BASE_PATH + '/login', (req, res) => {
     if (!PIN || PIN.trim() === '') {
-        return res.redirect('/');
+        return res.redirect(BASE_PATH + '/');
     }
-
     if (req.session.authenticated) {
-        return res.redirect('/');
+        return res.redirect(BASE_PATH + '/');
     }
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-app.get('/pin-length', (req, res) => {
+app.get(BASE_PATH + '/pin-length', (req, res) => {
     // If no PIN is set, return 0 length
     if (!PIN || PIN.trim() === '') {
         return res.json({ length: 0 });
@@ -193,7 +207,7 @@ app.get('/pin-length', (req, res) => {
     res.json({ length: PIN.length });
 });
 
-app.post('/verify-pin', (req, res) => {
+app.post(BASE_PATH + '/verify-pin', (req, res) => {
     // If no PIN is set, authentication is successful
     if (!PIN || PIN.trim() === '') {
         req.session.authenticated = true;
@@ -288,8 +302,8 @@ async function getTransactionsInRange(startDate, endDate) {
     return allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
-// API Endpoints
-app.post('/api/transactions', authMiddleware, async (req, res) => {
+// API Routes - all under BASE_PATH
+app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
     try {
         const { type, amount, description, category, date } = req.body;
         
@@ -347,7 +361,7 @@ app.post('/api/transactions', authMiddleware, async (req, res) => {
     }
 });
 
-app.get('/api/transactions/:year/:month', authMiddleware, async (req, res) => {
+app.get(BASE_PATH + '/api/transactions/:year/:month', authMiddleware, async (req, res) => {
     try {
         const { year, month } = req.params;
         const key = `${year}-${month.padStart(2, '0')}`;
@@ -368,7 +382,7 @@ app.get('/api/transactions/:year/:month', authMiddleware, async (req, res) => {
     }
 });
 
-app.get('/api/totals/:year/:month', authMiddleware, async (req, res) => {
+app.get(BASE_PATH + '/api/totals/:year/:month', authMiddleware, async (req, res) => {
     try {
         const { year, month } = req.params;
         const key = `${year}-${month.padStart(2, '0')}`;
@@ -391,7 +405,7 @@ app.get('/api/totals/:year/:month', authMiddleware, async (req, res) => {
     }
 });
 
-app.get('/api/transactions/range', authMiddleware, async (req, res) => {
+app.get(BASE_PATH + '/api/transactions/range', authMiddleware, async (req, res) => {
     try {
         const { start, end } = req.query;
         if (!start || !end) {
@@ -406,7 +420,7 @@ app.get('/api/transactions/range', authMiddleware, async (req, res) => {
     }
 });
 
-app.get('/api/totals/range', authMiddleware, async (req, res) => {
+app.get(BASE_PATH + '/api/totals/range', authMiddleware, async (req, res) => {
     try {
         const { start, end } = req.query;
         if (!start || !end) {
@@ -434,7 +448,7 @@ app.get('/api/totals/range', authMiddleware, async (req, res) => {
     }
 });
 
-app.get('/api/export/:year/:month', authMiddleware, async (req, res) => {
+app.get(BASE_PATH + '/api/export/:year/:month', authMiddleware, async (req, res) => {
     try {
         const { year, month } = req.params;
         const key = `${year}-${month.padStart(2, '0')}`;
@@ -463,7 +477,7 @@ app.get('/api/export/:year/:month', authMiddleware, async (req, res) => {
     }
 });
 
-app.get('/api/export/range', authMiddleware, async (req, res) => {
+app.get(BASE_PATH + '/api/export/range', authMiddleware, async (req, res) => {
     try {
         const { start, end } = req.query;
         if (!start || !end) {
@@ -493,7 +507,7 @@ app.get('/api/export/range', authMiddleware, async (req, res) => {
     }
 });
 
-app.put('/api/transactions/:id', authMiddleware, async (req, res) => {
+app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const { type, amount, description, category, date } = req.body;
@@ -580,7 +594,7 @@ app.put('/api/transactions/:id', authMiddleware, async (req, res) => {
     }
 });
 
-app.delete('/api/transactions/:id', authMiddleware, async (req, res) => {
+app.delete(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
         const transactions = await loadTransactions();
@@ -629,7 +643,7 @@ const SUPPORTED_CURRENCIES = [
 ];
 
 // Get current currency setting
-app.get('/api/settings/currency', authMiddleware, (req, res) => {
+app.get(BASE_PATH + '/api/settings/currency', authMiddleware, (req, res) => {
     const currency = process.env.CURRENCY || 'USD';
     if (!SUPPORTED_CURRENCIES.includes(currency)) {
         return res.status(200).json({ currency: 'USD' });
@@ -638,10 +652,24 @@ app.get('/api/settings/currency', authMiddleware, (req, res) => {
 });
 
 // Get list of supported currencies
-app.get('/api/settings/supported-currencies', authMiddleware, (req, res) => {
+app.get(BASE_PATH + '/api/settings/supported-currencies', authMiddleware, (req, res) => {
     res.status(200).json({ currencies: SUPPORTED_CURRENCIES });
 });
 
+// Add logging to config endpoint
+app.get(BASE_PATH + '/config.js', (req, res) => {
+    debugLog('Serving config.js with BASE_PATH:', BASE_PATH);
+    res.type('application/javascript').send(`
+        window.appConfig = {
+            basePath: '${BASE_PATH}',
+            debug: ${DEBUG}
+        };
+    `);
+});
+
+// Add logging to server startup
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    debugLog('Debug mode enabled');
+    debugLog('Base path:', BASE_PATH);
 }); 
