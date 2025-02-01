@@ -44,6 +44,7 @@ DumbBudget supports the following currencies:
 - SEK (Swedish Krona) 🇸🇪  
 - NOK (Norwegian Krone) 🇳🇴  
 - DKK (Danish Krone) 🇩🇰  
+- IDR (Indonesia Rupiah) 🇮🇩
 
 Set your preferred currency using the `CURRENCY` environment variable (defaults to USD if not set).
 
