@@ -199,6 +199,16 @@ app.get(BASE_PATH + '/login', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
+app.get(BASE_PATH + '/api/config', (req, res) => {
+    let instanceName = process.env.INSTANCE_NAME;
+    if (instanceName == undefined) {
+        instanceName = 'DumbBudget';
+    } else {
+        instanceName = `DumbBudget - ${process.env.INSTANCE_NAME}`
+    }
+    res.json({ instanceName: instanceName });
+});
+
 app.get(BASE_PATH + '/pin-length', (req, res) => {
     // If no PIN is set, return 0 length
     if (!PIN || PIN.trim() === '') {

@@ -56,6 +56,7 @@ docker run -d \
   -e DUMBBUDGET_PIN=12345 \
   -e CURRENCY=USD \
   -e BASE_URL=http://localhost:3000 \
+  -e INSTANCE_NAME='My Account' \
   dumbwareio/dumbbudget:latest
 ```
 
@@ -69,6 +70,7 @@ docker run -d \
 | `PORT` | Port number for the server | No | `3000` | `8080` |
 | `CURRENCY` | Currency code for transactions | No | `USD` | `EUR` |
 | `BASE_URL` | Base URL for the application | No | `http://localhost:PORT` | `https://budget.example.com` |
+| `INSTANCE_NAME` | Allows you to name each instance should you have multiple. | No | - | `My Account` |
 
 ## Development Setup
 
@@ -90,6 +92,7 @@ PORT=3000
 NODE_ENV=development
 BASE_URL=http://localhost:3000
 CURRENCY=USD
+INSTANCE_NAME='My Account'
 ```
 
 4. Start the development server:
@@ -114,6 +117,7 @@ docker run -d \
   -v ~/dumbbudget-data:/app/data \
   -e DUMBBUDGET_PIN=12345 \
   -e BASE_URL=http://localhost:3000 \
+  -e INSTANCE_NAME='My Account' \
   dumbwareio/dumbbudget:latest
 ```
 
