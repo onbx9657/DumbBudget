@@ -6,5 +6,16 @@
   "2024-01": {
     "income": [],
     "expenses": []
+  },
+  "2025-02": {
+    "income": [
+      {
+        "id": "de4413a6-cbce-49c7-9174-04f57a3f9b90",
+        "amount": 500,
+        "description": "test",
+        "date": "2025-02-10"
+      }
+    ],
+    "expenses": []
   }
 }

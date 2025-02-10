@@ -667,6 +667,77 @@ app.get(BASE_PATH + '/config.js', (req, res) => {
     `);
 });
 
+// API Authentication middleware for DumbCal
+const apiAuthMiddleware = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Missing authorization header' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (token !== process.env.DUMB_SECRET) {
+        return res.status(401).json({ error: 'Invalid authorization token' });
+    }
+
+    next();
+};
+
+// Calendar API endpoint
+app.get(BASE_PATH + '/api/calendar/transactions', apiAuthMiddleware, async (req, res) => {
+    try {
+        const { start_date, end_date } = req.query;
+
+        // Validate date parameters
+        if (!start_date || !end_date) {
+            return res.status(400).json({ error: 'Missing start_date or end_date parameter' });
+        }
+
+        // Validate date format
+        const startDate = new Date(start_date);
+        const endDate = new Date(end_date);
+        
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
+        }
+
+        // Load transactions
+        const allTransactions = await loadTransactions();
+        
+        // Filter transactions within date range
+        const filteredTransactions = [];
+        
+        for (const [month, data] of Object.entries(allTransactions)) {
+            const monthDate = new Date(month + '-01');
+            
+            if (monthDate >= startDate && monthDate <= endDate) {
+                // Add income transactions
+                data.income.forEach(transaction => {
+                    filteredTransactions.push({
+                        type: 'income',
+                        ...transaction,
+                        amount: parseFloat(transaction.amount)
+                    });
+                });
+                
+                // Add expense transactions
+                data.expenses.forEach(transaction => {
+                    filteredTransactions.push({
+                        type: 'expense',
+                        ...transaction,
+                        amount: parseFloat(transaction.amount)
+                    });
+                });
+            }
+        }
+
+        res.json({ transactions: filteredTransactions });
+    } catch (error) {
+        console.error('Calendar API error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 // Add logging to server startup
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
