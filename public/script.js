@@ -430,6 +430,9 @@ function editTransaction(id, transaction, isRecurringInstance) {
     const recurringCheckbox = document.getElementById('recurring-checkbox');
     const recurringOptions = document.getElementById('recurring-options');
     const recurringWeekday = document.getElementById('recurring-weekday');
+    const recurringInterval = document.getElementById('recurring-interval');
+    const recurringUnit = document.getElementById('recurring-unit');
+    const dayOfMonthSelect = document.getElementById('day-of-month-select');
 
     // Set form values
     document.getElementById('amount').value = transaction.amount;
@@ -456,15 +459,25 @@ function editTransaction(id, transaction, isRecurringInstance) {
         
         // Parse the recurring pattern
         const pattern = transaction.recurring.pattern;
-        const matches = pattern.match(/every (\d+) (day|week|month|year)(?:\s+on\s+(\w+))?/);
-        if (matches) {
-            const [, interval, unit, weekday] = matches;
-            document.getElementById('recurring-interval').value = interval;
-            document.getElementById('recurring-unit').value = unit;
+        const monthlyDayMatch = pattern.match(/every (\d+)(?:st|nd|rd|th) of the month/);
+        const regularMatch = pattern.match(/every (\d+) (day|week|month|year)(?:\s+on\s+(\w+))?/);
+        
+        if (monthlyDayMatch) {
+            recurringUnit.value = 'day of month';
+            dayOfMonthSelect.value = monthlyDayMatch[1];
+            dayOfMonthSelect.style.display = 'inline-block';
+            recurringInterval.style.display = 'none';
+            recurringWeekday.style.display = 'none';
+        } else if (regularMatch) {
+            const [, interval, unit, weekday] = regularMatch;
+            recurringInterval.value = interval;
+            recurringUnit.value = unit;
+            recurringInterval.style.display = 'inline-block';
+            dayOfMonthSelect.style.display = 'none';
             
             if (unit === 'week' && weekday) {
-                recurringWeekday.style.display = 'block';
-                document.getElementById('recurring-weekday').value = weekday;
+                recurringWeekday.style.display = 'inline-block';
+                recurringWeekday.value = weekday;
             } else {
                 recurringWeekday.style.display = 'none';
             }
@@ -473,6 +486,8 @@ function editTransaction(id, transaction, isRecurringInstance) {
         recurringCheckbox.checked = false;
         recurringOptions.style.display = 'none';
         recurringWeekday.style.display = 'none';
+        recurringInterval.style.display = 'inline-block';
+        dayOfMonthSelect.style.display = 'none';
     }
 
     // Update form submit button text
@@ -648,13 +663,25 @@ function createRecurringControls() {
 
     const checkboxWrapper = document.createElement('div');
     checkboxWrapper.className = 'recurring-checkbox-wrapper';
+    checkboxWrapper.style.display = 'flex';
+    checkboxWrapper.style.alignItems = 'center';
+    checkboxWrapper.style.gap = '0.5rem';
+    checkboxWrapper.style.marginBottom = '1rem';
+    checkboxWrapper.style.width = 'fit-content';
+    checkboxWrapper.style.minWidth = '100px';
 
     const checkbox = document.createElement('input');
     checkbox.type = 'checkbox';
     checkbox.id = 'recurring-checkbox';
+    checkbox.style.margin = '0';
+
     const label = document.createElement('label');
     label.htmlFor = 'recurring-checkbox';
     label.textContent = 'Recurring';
+    label.style.margin = '0';
+    label.style.padding = '0';
+    label.style.cursor = 'pointer';
+    label.style.userSelect = 'none';
 
     checkboxWrapper.appendChild(checkbox);
     checkboxWrapper.appendChild(label);
@@ -673,20 +700,34 @@ function createRecurringControls() {
     intervalInput.type = 'number';
     intervalInput.id = 'recurring-interval';
     intervalInput.min = '1';
+    intervalInput.defaultValue = '1';
     intervalInput.value = '1';
+
+    // Day of month select
+    const dayOfMonthSelect = document.createElement('select');
+    dayOfMonthSelect.id = 'day-of-month-select';
+    dayOfMonthSelect.style.display = 'none';
+    // Add options for days 1-31
+    for (let i = 1; i <= 31; i++) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.textContent = `${i}${getDaySuffix(i)}`;
+        dayOfMonthSelect.appendChild(option);
+    }
 
     // Unit select
     const unitSelect = document.createElement('select');
     unitSelect.id = 'recurring-unit';
-    const units = ['day', 'week', 'month', 'year'];
+    const units = ['day', 'week', 'month', 'year', 'day of month'];
     units.forEach(unit => {
         const option = document.createElement('option');
         option.value = unit;
-        option.textContent = unit + (unit === 'day' ? '' : 's');
+        option.textContent = unit === 'day of month' ? 'day of month' : unit + (unit === 'day' ? '' : 's');
         unitSelect.appendChild(option);
     });
 
     intervalWrapper.appendChild(intervalInput);
+    intervalWrapper.appendChild(dayOfMonthSelect);
     intervalWrapper.appendChild(unitSelect);
 
     // Weekday select (for weekly recurrence)
@@ -708,6 +749,8 @@ function createRecurringControls() {
 
     unitSelect.addEventListener('change', () => {
         weekdaySelect.style.display = unitSelect.value === 'week' ? 'inline-block' : 'none';
+        intervalInput.style.display = unitSelect.value === 'day of month' ? 'none' : 'inline-block';
+        dayOfMonthSelect.style.display = unitSelect.value === 'day of month' ? 'inline-block' : 'none';
     });
 
     // Assemble the controls
@@ -725,10 +768,19 @@ function buildRecurringPattern() {
     const checkbox = document.getElementById('recurring-checkbox');
     if (!checkbox.checked) return null;
 
-    const interval = document.getElementById('recurring-interval').value;
     const unit = document.getElementById('recurring-unit').value;
+
+    if (unit === 'day of month') {
+        const dayNum = document.getElementById('day-of-month-select').value;
+        const suffix = getDaySuffix(dayNum);
+        return {
+            pattern: `every ${dayNum}${suffix} of the month`,
+            until: null
+        };
+    }
+
+    const interval = document.getElementById('recurring-interval').value;
     const weekday = document.getElementById('recurring-weekday').value;
-    const transactionDate = document.getElementById('transactionDate');
 
     let pattern = `every ${interval} ${unit}`;
     if (unit === 'week' && weekday) {
@@ -737,25 +789,20 @@ function buildRecurringPattern() {
 
     return {
         pattern,
-        until: null // We'll use the transaction date as the start date
+        until: null
     };
 }
 
-// Helper function to parse recurring pattern
-function parseRecurringPattern(pattern) {
-    const matches = pattern.match(/every (\d+) (day|week|month|year)s?(?: on (\w+))?/);
+// Helper function to get the correct suffix for a day number
+function getDaySuffix(day) {
+    if (day >= 11 && day <= 13) return 'th';
     
-    if (!matches) {
-        throw new Error('Invalid recurring pattern');
+    switch (day % 10) {
+        case 1: return 'st';
+        case 2: return 'nd';
+        case 3: return 'rd';
+        default: return 'th';
     }
-    
-    const [_, interval, unit, dayOfWeek] = matches;
-    
-    return {
-        interval: parseInt(interval),
-        unit: unit.toLowerCase(),
-        dayOfWeek: dayOfWeek ? dayOfWeek.toLowerCase() : null
-    };
 }
 
 // Update the initMainPage function to fetch currency first
@@ -883,7 +930,6 @@ async function initMainPage() {
     loadTransactions();
     updateTotals();
 }
-
 // Initialize functionality
 document.addEventListener('DOMContentLoaded', () => {
     initThemeToggle();

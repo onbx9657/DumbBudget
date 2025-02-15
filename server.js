@@ -287,12 +287,8 @@ async function getTransactionsInRange(startDate, endDate) {
         if (month && Array.isArray(month.income)) {
             month.income.forEach(t => {
                 if (t.recurring?.pattern) {
-                    // For recurring transactions, add to recurring array
+                    // For recurring transactions, only add to recurring array
                     recurringTransactions.push({ ...t, type: 'income' });
-                    // Also add the original transaction if it's in range
-                    if (t.date >= startDate && t.date <= endDate) {
-                        allTransactions.push({ ...t, type: 'income' });
-                    }
                 } else if (t.date >= startDate && t.date <= endDate) {
                     // For non-recurring, add to all transactions if in range
                     allTransactions.push({ ...t, type: 'income' });
@@ -304,12 +300,8 @@ async function getTransactionsInRange(startDate, endDate) {
         if (month && Array.isArray(month.expenses)) {
             month.expenses.forEach(t => {
                 if (t.recurring?.pattern) {
-                    // For recurring transactions, add to recurring array
+                    // For recurring transactions, only add to recurring array
                     recurringTransactions.push({ ...t, type: 'expense' });
-                    // Also add the original transaction if it's in range
-                    if (t.date >= startDate && t.date <= endDate) {
-                        allTransactions.push({ ...t, type: 'expense' });
-                    }
                 } else if (t.date >= startDate && t.date <= endDate) {
                     // For non-recurring, add to all transactions if in range
                     allTransactions.push({ ...t, type: 'expense' });
@@ -347,8 +339,10 @@ app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
 
         // Validate recurring pattern if present
         if (recurring?.pattern) {
-            const isValid = /every (\d+) (day|week|month|year)s?(?: on (\w+))?/.test(recurring.pattern);
-            if (!isValid) {
+            const isValidRegular = /every (\d+) (day|week|month|year)s?(?: on (\w+))?/.test(recurring.pattern);
+            const isValidMonthDay = /every (\d+)(?:st|nd|rd|th) of the month/.test(recurring.pattern);
+            
+            if (!isValidRegular && !isValidMonthDay) {
                 return res.status(400).json({ error: 'Invalid recurring pattern format' });
             }
             if (recurring.until && isNaN(new Date(recurring.until).getTime())) {
@@ -359,22 +353,33 @@ app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
         // For recurring transactions with a weekday pattern, adjust the date to the first occurrence
         let adjustedDate = date;
         if (recurring?.pattern) {
-            const { unit, dayOfWeek } = parseRecurringPattern(recurring.pattern);
-            if (unit === 'week' && dayOfWeek) {
+            const pattern = parseRecurringPattern(recurring.pattern);
+            if (pattern.unit === 'week' && pattern.dayOfWeek) {
                 const [year, month, day] = date.split('-');
                 const selectedDate = new Date(year, month - 1, day);
                 const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-                const targetDay = weekdays.indexOf(dayOfWeek);
+                const targetDay = weekdays.indexOf(pattern.dayOfWeek);
                 const currentDay = selectedDate.getDay();
                 
                 // Calculate days to add to reach the target weekday
                 let daysToAdd = targetDay - currentDay;
-                if (daysToAdd <= 0) {
+                if (daysToAdd < 0) {
                     daysToAdd += 7; // Move to next week if target day has passed
                 }
                 
                 // Adjust the date
                 selectedDate.setDate(selectedDate.getDate() + daysToAdd);
+                adjustedDate = selectedDate.toISOString().split('T')[0];
+            } else if (pattern.unit === 'monthday') {
+                // For day-of-month pattern, adjust to the first occurrence
+                const [year, month] = date.split('-');
+                const selectedDate = new Date(year, month - 1, pattern.dayOfMonth);
+                
+                // If the selected day has passed in the current month, move to next month
+                if (selectedDate < new Date(date)) {
+                    selectedDate.setMonth(selectedDate.getMonth() + 1);
+                }
+                
                 adjustedDate = selectedDate.toISOString().split('T')[0];
             }
         }
@@ -476,19 +481,29 @@ app.get(BASE_PATH + '/api/totals/:year/:month', authMiddleware, async (req, res)
 
 // Helper function to parse recurring pattern
 function parseRecurringPattern(pattern) {
-    const matches = pattern.match(/every (\d+) (day|week|month|year)s?(?: on (\w+))?/);
+    // Try matching the existing pattern first
+    const weeklyMatches = pattern.match(/every (\d+) (day|week|month|year)s?(?: on (\w+))?/);
     
-    if (!matches) {
-        throw new Error('Invalid recurring pattern');
+    // Try matching the "Nth of month" pattern
+    const monthlyDayMatches = pattern.match(/every (\d+)(?:st|nd|rd|th) of the month/);
+    
+    if (weeklyMatches) {
+        const [_, interval, unit, dayOfWeek] = weeklyMatches;
+        return {
+            interval: parseInt(interval),
+            unit: unit.toLowerCase(),
+            dayOfWeek: dayOfWeek ? dayOfWeek.toLowerCase() : null
+        };
+    } else if (monthlyDayMatches) {
+        const [_, dayOfMonth] = monthlyDayMatches;
+        return {
+            interval: 1,
+            unit: 'monthday',
+            dayOfMonth: parseInt(dayOfMonth)
+        };
     }
     
-    const [_, interval, unit, dayOfWeek] = matches;
-    
-    return {
-        interval: parseInt(interval),
-        unit: unit.toLowerCase(),
-        dayOfWeek: dayOfWeek ? dayOfWeek.toLowerCase() : null
-    };
+    throw new Error('Invalid recurring pattern');
 }
 
 // Helper function to generate recurring instances
@@ -496,7 +511,7 @@ function generateRecurringInstances(transaction, startDate, endDate) {
     if (!transaction.recurring?.pattern) return [];
     
     const instances = [];
-    const { interval, unit, dayOfWeek } = parseRecurringPattern(transaction.recurring.pattern);
+    const pattern = parseRecurringPattern(transaction.recurring.pattern);
     
     // Convert dates to Date objects for easier manipulation
     const [tYear, tMonth, tDay] = transaction.date.split('-');
@@ -515,20 +530,39 @@ function generateRecurringInstances(transaction, startDate, endDate) {
         })()
         : rangeEnd;
     
-    // For weekly patterns with a specified day, adjust the start date to the first occurrence
-    if (unit === 'week' && dayOfWeek) {
+    // Handle "Nth of month" pattern
+    if (pattern.unit === 'monthday') {
+        // Set the initial date to the first occurrence
+        currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), pattern.dayOfMonth);
+        if (currentDate < new Date(tYear, tMonth - 1, tDay)) {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+        }
+    }
+    // For weekly patterns, ensure we start on the correct day of the week
+    else if (pattern.unit === 'week' && pattern.dayOfWeek) {
         const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-        const targetDay = weekdays.indexOf(dayOfWeek);
+        const targetDay = weekdays.indexOf(pattern.dayOfWeek);
         const currentDay = currentDate.getDay();
         
         // Calculate days to add to reach the target weekday
         let daysToAdd = targetDay - currentDay;
-        if (daysToAdd <= 0) {
+        if (daysToAdd < 0) {
             daysToAdd += 7; // Move to next week if target day has passed
         }
         
-        // Adjust the start date
+        // Adjust the start date to the first occurrence
         currentDate.setDate(currentDate.getDate() + daysToAdd);
+        
+        // For intervals greater than 1, we need to ensure we're starting on the correct week
+        if (pattern.interval > 1) {
+            // Calculate weeks since the start date
+            const weeksSinceStart = Math.floor((currentDate - rangeStart) / (7 * 24 * 60 * 60 * 1000));
+            const remainingWeeks = weeksSinceStart % pattern.interval;
+            if (remainingWeeks !== 0) {
+                // Move forward to the next valid week
+                currentDate.setDate(currentDate.getDate() + (pattern.interval - remainingWeeks) * 7);
+            }
+        }
     }
     
     // Track dates we've already added to prevent duplicates
@@ -555,18 +589,22 @@ function generateRecurringInstances(transaction, startDate, endDate) {
         }
         
         // Advance to next occurrence based on interval and unit
-        switch (unit) {
+        switch (pattern.unit) {
             case 'day':
-                currentDate.setDate(currentDate.getDate() + interval);
+                currentDate.setDate(currentDate.getDate() + pattern.interval);
                 break;
             case 'week':
-                currentDate.setDate(currentDate.getDate() + (interval * 7));
+                currentDate.setDate(currentDate.getDate() + (pattern.interval * 7));
                 break;
             case 'month':
-                currentDate.setMonth(currentDate.getMonth() + interval);
+                currentDate.setMonth(currentDate.getMonth() + pattern.interval);
                 break;
             case 'year':
-                currentDate.setFullYear(currentDate.getFullYear() + interval);
+                currentDate.setFullYear(currentDate.getFullYear() + pattern.interval);
+                break;
+            case 'monthday':
+                // Move to the next month, keeping the same day of month
+                currentDate.setMonth(currentDate.getMonth() + 1);
                 break;
         }
     }

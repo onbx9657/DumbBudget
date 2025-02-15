@@ -51,9 +51,13 @@ Authorization: Bearer YOUR_DUMB_SECRET
 ```
 
 **Recurring Pattern Format:**
-The `pattern` field in recurring transactions follows a specific format:
+The `pattern` field in recurring transactions follows these formats:
 ```
+Regular patterns:
 "every {number} {unit} [on {weekday}]"
+
+Monthly day patterns:
+"every {number}{suffix} of the month"
 
 Examples:
 - "every 1 day"
@@ -62,6 +66,9 @@ Examples:
 - "every 2 week on thursday"
 - "every 1 month"
 - "every 1 year"
+- "every 1st of the month"
+- "every 15th of the month"
+- "every 22nd of the month"
 ```
 
 **Example Response:**
@@ -94,7 +101,7 @@ Examples:
       "category": "Salary",
       "id": "def456",
       "recurring": {
-        "pattern": "every 1 month",
+        "pattern": "every 1st of the month",
         "until": null
       }
     }
@@ -125,11 +132,18 @@ For weekly recurring transactions with a specified weekday:
   - The original transaction will be saved with date 2/3/2025 (first Monday)
   - Recurring instances will be generated for 2/17/2025, 3/3/2025, etc.
 
+For monthly recurring transactions on a specific day:
+- The original transaction's date will be adjusted to the first occurrence of the specified day
+- For example, if you create a transaction on 2/5/2025 that recurs every 15th of the month:
+  - The original transaction will be saved with date 2/15/2025 (first occurrence)
+  - Recurring instances will be generated for 3/15/2025, 4/15/2025, etc.
+
 The API handles these recurring patterns:
 - Daily: "every N day"
 - Weekly: "every N week on {weekday}"
 - Monthly: "every N month"
 - Yearly: "every N year"
+- Monthly day: "every Nth of the month"
 
 Where:
 - N is a positive integer
