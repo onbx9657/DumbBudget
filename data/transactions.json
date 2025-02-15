@@ -10,10 +10,20 @@
   "2025-02": {
     "income": [
       {
-        "id": "de4413a6-cbce-49c7-9174-04f57a3f9b90",
-        "amount": 500,
-        "description": "test",
-        "date": "2025-02-10"
+        "id": "8a3e6dbd-8166-4bc0-bb45-f84e7828a526",
+        "amount": 80,
+        "description": "Backend",
+        "date": "2025-02-12"
+      },
+      {
+        "id": "90962713-886b-4231-8755-4c88a9df2e8b",
+        "amount": 1,
+        "description": "DumbBudget Recurring",
+        "date": "2025-02-03",
+        "recurring": {
+          "pattern": "every 1 week on monday",
+          "until": null
+        }
       }
     ],
     "expenses": []

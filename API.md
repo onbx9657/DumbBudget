@@ -16,7 +16,7 @@ If the secret is invalid or missing, the API will return a 401 Unauthorized resp
 
 ### GET /api/calendar/transactions
 
-Returns all transactions within a specified date range.
+Returns all transactions within a specified date range, including recurring transaction instances.
 
 **Query Parameters:**
 - `start_date`: (Required) Start date in ISO format (YYYY-MM-DD)
@@ -37,10 +37,31 @@ Authorization: Bearer YOUR_DUMB_SECRET
       "amount": number,
       "description": string,
       "date": string (ISO date),
-      "category": string
+      "category": string,
+      "id": string,
+      "recurring": {                // Only present for recurring transactions
+        "pattern": string,          // Recurring pattern string
+        "until": string|null        // Optional ISO date string for end date
+      },
+      "isRecurringInstance": boolean,     // True for generated recurring instances
+      "recurringParentId": string         // Present only for recurring instances
     }
   ]
 }
+```
+
+**Recurring Pattern Format:**
+The `pattern` field in recurring transactions follows a specific format:
+```
+"every {number} {unit} [on {weekday}]"
+
+Examples:
+- "every 1 day"
+- "every 2 day"
+- "every 1 week on monday"
+- "every 2 week on thursday"
+- "every 1 month"
+- "every 1 year"
 ```
 
 **Example Response:**
@@ -52,14 +73,30 @@ Authorization: Bearer YOUR_DUMB_SECRET
       "amount": 50.00,
       "description": "Grocery shopping",
       "date": "2024-03-15",
-      "category": "Food"
+      "category": "Food",
+      "id": "abc123"
+    },
+    {
+      "type": "expense",
+      "amount": 50.00,
+      "description": "Grocery shopping",
+      "date": "2024-03-22",
+      "category": "Food",
+      "id": "abc123-2024-03-22T00:00:00.000Z",
+      "isRecurringInstance": true,
+      "recurringParentId": "abc123"
     },
     {
       "type": "income",
       "amount": 2000.00,
       "description": "Salary",
       "date": "2024-03-01",
-      "category": "Salary"
+      "category": "Salary",
+      "id": "def456",
+      "recurring": {
+        "pattern": "every 1 month",
+        "until": null
+      }
     }
   ]
 }
@@ -71,4 +108,30 @@ Authorization: Bearer YOUR_DUMB_SECRET
 - 500 Internal Server Error: Server-side error
 
 ## Rate Limiting
-To prevent abuse, the API is rate-limited to 100 requests per hour per API key. 
+To prevent abuse, the API is rate-limited to 100 requests per hour per API key.
+
+## Recurring Transactions
+When a transaction is recurring, the API will generate instances based on the pattern and return them in the response. Each instance will have:
+- A unique ID formed by combining the parent ID and instance date
+- The `isRecurringInstance` flag set to true
+- A reference to the parent transaction ID in the `recurringParentId` field
+- All other properties from the parent transaction, with the date adjusted according to the pattern
+
+The original transaction will also appear in the results if its date falls within the requested range.
+
+For weekly recurring transactions with a specified weekday:
+- The original transaction's date will be adjusted to the first occurrence of the specified weekday
+- For example, if you create a transaction on 2/1/2025 (Saturday) that recurs every 2 weeks on Monday:
+  - The original transaction will be saved with date 2/3/2025 (first Monday)
+  - Recurring instances will be generated for 2/17/2025, 3/3/2025, etc.
+
+The API handles these recurring patterns:
+- Daily: "every N day"
+- Weekly: "every N week on {weekday}"
+- Monthly: "every N month"
+- Yearly: "every N year"
+
+Where:
+- N is a positive integer
+- weekday is lowercase (monday, tuesday, etc.)
+- Patterns exactly match DumbCal's format for seamless integration 
