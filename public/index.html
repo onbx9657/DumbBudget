@@ -5,8 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DumbBudget</title>
     <script src="config.js"></script>
-    <link rel="icon" type="image/x-icon" href="assets/favicon.ico">
-    <link rel="icon" type="image/png" href="assets/logo.png">
+    <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -133,7 +132,13 @@
                         <option value="Food">Food</option>
                         <option value="Transport">Transport</option>
                         <option value="Other">Other</option>
+                        <option value="add_new">+ Add Category</option>
                     </select>
+                    <div id="customCategoryField" style="display: none;">
+                        <input type="text" id="customCategory" placeholder="Enter new category">
+                        <button type="button" id="saveCategory">Add</button>
+                        <button type="button" id="cancelCategory">Cancel</button>
+                    </div>
                 </div>
                 <div class="amount-input-wrapper">
                     <span class="currency-symbol">$</span>

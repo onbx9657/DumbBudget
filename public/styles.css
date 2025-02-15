@@ -965,3 +965,47 @@ footer {
     margin-right: 0.5rem;
     color: var(--primary);
 }
+
+/* Custom Category Field Styles */
+#customCategoryField {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+#customCategory {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--container);
+    color: var(--text);
+}
+
+#customCategoryField button {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+    font-size: 14px;
+}
+
+#saveCategory {
+    background: var(--success);
+    color: white;
+}
+
+#saveCategory:hover {
+    background: color-mix(in srgb, var(--success) 85%, black);
+}
+
+#cancelCategory {
+    background: var(--danger);
+    color: white;
+}
+
+#cancelCategory:hover {
+    background: color-mix(in srgb, var(--danger) 85%, black);
+}

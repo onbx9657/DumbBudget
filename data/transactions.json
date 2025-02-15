@@ -11,35 +11,49 @@
     "income": [
       {
         "id": "08c94087-f974-4a4a-9400-ff2a1200c5db",
-        "amount": 75,
+        "amount": 2400,
         "description": "paycheck",
-        "date": "2025-02-03",
+        "date": "2025-02-01",
         "recurring": {
           "pattern": "every 2 week on monday",
           "until": null
         }
-      },
-      {
-        "id": "ec5f9ef2-614a-4ee6-83d7-06085929149c",
-        "amount": 1,
-        "description": "1 week",
-        "date": "2025-02-05",
-        "recurring": {
-          "pattern": "every 1 week on wednesday",
-          "until": null
-        }
-      },
-      {
-        "id": "52e3c54b-54c0-4242-b3c6-0031cba1ee44",
-        "amount": 19,
-        "description": "nineteenth",
-        "date": "2025-02-19",
-        "recurring": {
-          "pattern": "every 19th of the month",
-          "until": null
-        }
       }
     ],
-    "expenses": []
+    "expenses": [
+      {
+        "id": "4d93dd99-19f3-4c86-8094-9807bf31ead7",
+        "amount": 550,
+        "description": "House Payment",
+        "date": "2025-02-03",
+        "recurring": {
+          "pattern": "every 2 week on monday",
+          "until": null
+        },
+        "category": "Mortgage"
+      },
+      {
+        "id": "fb6bdc52-61ac-4020-aada-4d7fce3a519f",
+        "amount": 475,
+        "description": "Jeep",
+        "date": "2025-02-20",
+        "recurring": {
+          "pattern": "every 20th of the month",
+          "until": null
+        },
+        "category": "Car Payment"
+      },
+      {
+        "id": "011bc275-f610-4e2b-8f36-b4432c719495",
+        "amount": 300,
+        "description": "Electric",
+        "date": "2025-02-23",
+        "recurring": {
+          "pattern": "every 23rd of the month",
+          "until": null
+        },
+        "category": "Bills"
+      }
+    ]
   }
 }

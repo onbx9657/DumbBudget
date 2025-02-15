@@ -422,7 +422,14 @@ async function loadTransactions() {
 
 // Update editTransaction function
 function editTransaction(id, transaction, isRecurringInstance) {
-    editingTransactionId = isRecurringInstance ? transaction.id : id;
+    // For recurring instances, always use the base transaction ID
+    if (isRecurringInstance) {
+        // Extract the base transaction ID (everything before the date)
+        editingTransactionId = id.split('-202')[0]; // This will get the UUID part before the date
+    } else {
+        editingTransactionId = id;
+    }
+
     const modal = document.getElementById('transactionModal');
     const form = document.getElementById('transactionForm');
     const toggleBtns = document.querySelectorAll('.toggle-btn');
@@ -523,7 +530,84 @@ async function updateTotals() {
     }
 }
 
-// Initialize modal functionality
+// Custom Categories Management
+function loadCustomCategories() {
+    const customCategories = JSON.parse(localStorage.getItem('customCategories') || '[]');
+    const categorySelect = document.getElementById('category');
+    const addNewOption = categorySelect.querySelector('option[value="add_new"]');
+    
+    // Remove existing custom categories
+    Array.from(categorySelect.options).forEach(option => {
+        if (option.dataset.custom === 'true') {
+            categorySelect.removeChild(option);
+        }
+    });
+    
+    // Add custom categories before the "Add Category" option
+    customCategories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.textContent = category;
+        option.dataset.custom = 'true';
+        categorySelect.insertBefore(option, addNewOption);
+    });
+}
+
+function saveCustomCategory(category) {
+    const customCategories = JSON.parse(localStorage.getItem('customCategories') || '[]');
+    if (!customCategories.includes(category)) {
+        customCategories.push(category);
+        localStorage.setItem('customCategories', JSON.stringify(customCategories));
+    }
+    loadCustomCategories();
+}
+
+function initCategoryHandling() {
+    const categorySelect = document.getElementById('category');
+    const customCategoryField = document.getElementById('customCategoryField');
+    const customCategoryInput = document.getElementById('customCategory');
+    const saveCategoryBtn = document.getElementById('saveCategory');
+    const cancelCategoryBtn = document.getElementById('cancelCategory');
+
+    // Load custom categories on page load
+    loadCustomCategories();
+
+    categorySelect.addEventListener('change', (e) => {
+        if (e.target.value === 'add_new') {
+            customCategoryField.style.display = 'block';
+            categorySelect.style.display = 'none';
+            customCategoryInput.focus();
+        }
+    });
+
+    saveCategoryBtn.addEventListener('click', () => {
+        const newCategory = customCategoryInput.value.trim();
+        if (newCategory) {
+            saveCustomCategory(newCategory);
+            customCategoryField.style.display = 'none';
+            categorySelect.style.display = 'block';
+            categorySelect.value = newCategory;
+            customCategoryInput.value = '';
+        }
+    });
+
+    cancelCategoryBtn.addEventListener('click', () => {
+        customCategoryField.style.display = 'none';
+        categorySelect.style.display = 'block';
+        categorySelect.value = 'Other';
+        customCategoryInput.value = '';
+    });
+
+    // Handle Enter key in custom category input
+    customCategoryInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveCategoryBtn.click();
+        }
+    });
+}
+
+// Update the initModalHandling function to include category handling
 function initModalHandling() {
     const modal = document.getElementById('transactionModal');
     // Only initialize if we're on the main page
@@ -537,6 +621,9 @@ function initModalHandling() {
     const amountInput = document.getElementById('amount');
 
     let currentTransactionType = 'income';
+
+    // Initialize category handling
+    initCategoryHandling();
 
     // Create and add recurring controls
     const recurringControls = createRecurringControls();
@@ -930,10 +1017,20 @@ async function initMainPage() {
     loadTransactions();
     updateTotals();
 }
+
 // Initialize functionality
 document.addEventListener('DOMContentLoaded', () => {
     initThemeToggle();
-    setupPinInputs();
-    initModalHandling();
-    initMainPage();
+    
+    // Check which page we're on
+    const isLoginPage = window.location.pathname.includes('login');
+    
+    if (isLoginPage) {
+        // Only initialize PIN inputs on login page
+        setupPinInputs();
+    } else {
+        // Only initialize main page functionality when not on login
+        initModalHandling();
+        initMainPage();
+    }
 }); 
