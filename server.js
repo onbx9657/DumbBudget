@@ -10,6 +10,7 @@ const fs = require('fs').promises;
 const app = express();
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+const SITE_TITLE = process.env.SITE_TITLE || 'DumbBudget';
 
 // Get the project name from package.json to use for the PIN environment variable
 const projectName = require('./package.json').name.toUpperCase().replace(/-/g, '_');
@@ -884,12 +885,12 @@ app.get(BASE_PATH + '/api/settings/supported-currencies', authMiddleware, (req, 
 // Add logging to config endpoint
 app.get(BASE_PATH + '/config.js', (req, res) => {
     debugLog('Serving config.js with BASE_PATH:', BASE_PATH);
-    res.type('application/javascript').send(`
-        window.appConfig = {
-            basePath: '${BASE_PATH}',
-            debug: ${DEBUG}
-        };
-    `);
+    res.type('application/javascript');
+    res.send(`window.appConfig = {
+        debug: ${DEBUG},
+        basePath: '${BASE_PATH}',
+        title: '${SITE_TITLE}'
+    };`);
 });
 
 // API Authentication middleware for DumbCal

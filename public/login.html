@@ -3,8 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DumbBudget</title>
+    <title>Loading...</title>
     <script src="config.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const siteTitle = window.appConfig.title || 'DumbBudget';
+            document.title = `${siteTitle} - Login`;
+            document.querySelector('h1').textContent = siteTitle;
+        });
+    </script>
     <link rel="icon" type="image/svg+xml" href="assets/logo.svg">
     <link rel="stylesheet" href="styles.css">
 </head>

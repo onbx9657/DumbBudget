@@ -426,6 +426,10 @@ function editTransaction(id, transaction, isRecurringInstance) {
     if (isRecurringInstance) {
         // Extract the base transaction ID (everything before the date)
         editingTransactionId = id.split('-202')[0]; // This will get the UUID part before the date
+        
+        // Find the original transaction to get its start date
+        const startDate = transaction.recurring?.startDate || transaction.date;
+        transaction = { ...transaction, date: startDate };
     } else {
         editingTransactionId = id;
     }
