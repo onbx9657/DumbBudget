@@ -201,11 +201,11 @@ app.get(BASE_PATH + '/login', (req, res) => {
 });
 
 app.get(BASE_PATH + '/api/config', (req, res) => {
-    let instanceName = process.env.INSTANCE_NAME;
+    let instanceName = process.env.SITE_TITLE;
     if (instanceName == undefined) {
         instanceName = 'DumbBudget';
     } else {
-        instanceName = `DumbBudget - ${process.env.INSTANCE_NAME}`
+        instanceName = `DumbBudget - ${process.env.SITE_TITLE}`
     }
     res.json({ instanceName: instanceName });
 });
