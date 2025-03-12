@@ -10,6 +10,7 @@ const fs = require('fs').promises;
 const app = express();
 const PORT = process.env.PORT || 3000;
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+const SITE_TITLE = process.env.SITE_TITLE || 'DumbBudget';
 
 // Get the project name from package.json to use for the PIN environment variable
 const projectName = require('./package.json').name.toUpperCase().replace(/-/g, '_');
@@ -289,33 +290,52 @@ setInterval(() => {
 async function getTransactionsInRange(startDate, endDate) {
     const transactions = await loadTransactions();
     const allTransactions = [];
+    const recurringTransactions = [];
     
     // Collect all transactions within the date range
     Object.values(transactions).forEach(month => {
         // Safely handle income transactions
         if (month && Array.isArray(month.income)) {
-            const incomeInRange = month.income.filter(t => 
-                t.date >= startDate && t.date <= endDate
-            ).map(t => ({ ...t, type: 'income' }));
-            allTransactions.push(...incomeInRange);
+            month.income.forEach(t => {
+                if (t.recurring?.pattern) {
+                    // For recurring transactions, only add to recurring array
+                    recurringTransactions.push({ ...t, type: 'income' });
+                } else if (t.date >= startDate && t.date <= endDate) {
+                    // For non-recurring, add to all transactions if in range
+                    allTransactions.push({ ...t, type: 'income' });
+                }
+            });
         }
         
         // Safely handle expense transactions
         if (month && Array.isArray(month.expenses)) {
-            const expensesInRange = month.expenses.filter(t => 
-                t.date >= startDate && t.date <= endDate
-            ).map(t => ({ ...t, type: 'expense' }));
-            allTransactions.push(...expensesInRange);
+            month.expenses.forEach(t => {
+                if (t.recurring?.pattern) {
+                    // For recurring transactions, only add to recurring array
+                    recurringTransactions.push({ ...t, type: 'expense' });
+                } else if (t.date >= startDate && t.date <= endDate) {
+                    // For non-recurring, add to all transactions if in range
+                    allTransactions.push({ ...t, type: 'expense' });
+                }
+            });
         }
     });
     
-    return allTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+    // Generate recurring instances
+    const recurringInstances = [];
+    for (const transaction of recurringTransactions) {
+        recurringInstances.push(...generateRecurringInstances(transaction, startDate, endDate));
+    }
+    
+    // Combine all transactions and instances
+    return [...allTransactions, ...recurringInstances]
+        .sort((a, b) => new Date(b.date) - new Date(a.date));
 }
 
 // API Routes - all under BASE_PATH
 app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
     try {
-        const { type, amount, description, category, date } = req.body;
+        const { type, amount, description, category, date, recurring } = req.body;
         
         // Basic validation
         if (!type || !amount || !description || !date) {
@@ -328,8 +348,55 @@ app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
             return res.status(400).json({ error: 'Category required for expenses' });
         }
 
+        // Validate recurring pattern if present
+        if (recurring?.pattern) {
+            const isValidRegular = /every (\d+) (day|week|month|year)s?(?: on (\w+))?/.test(recurring.pattern);
+            const isValidMonthDay = /every (\d+)(?:st|nd|rd|th) of the month/.test(recurring.pattern);
+            
+            if (!isValidRegular && !isValidMonthDay) {
+                return res.status(400).json({ error: 'Invalid recurring pattern format' });
+            }
+            if (recurring.until && isNaN(new Date(recurring.until).getTime())) {
+                return res.status(400).json({ error: 'Invalid until date format' });
+            }
+        }
+
+        // For recurring transactions with a weekday pattern, adjust the date to the first occurrence
+        let adjustedDate = date;
+        if (recurring?.pattern) {
+            const pattern = parseRecurringPattern(recurring.pattern);
+            if (pattern.unit === 'week' && pattern.dayOfWeek) {
+                const [year, month, day] = date.split('-');
+                const selectedDate = new Date(year, month - 1, day);
+                const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+                const targetDay = weekdays.indexOf(pattern.dayOfWeek);
+                const currentDay = selectedDate.getDay();
+                
+                // Calculate days to add to reach the target weekday
+                let daysToAdd = targetDay - currentDay;
+                if (daysToAdd < 0) {
+                    daysToAdd += 7; // Move to next week if target day has passed
+                }
+                
+                // Adjust the date
+                selectedDate.setDate(selectedDate.getDate() + daysToAdd);
+                adjustedDate = selectedDate.toISOString().split('T')[0];
+            } else if (pattern.unit === 'monthday') {
+                // For day-of-month pattern, adjust to the first occurrence
+                const [year, month] = date.split('-');
+                const selectedDate = new Date(year, month - 1, pattern.dayOfMonth);
+                
+                // If the selected day has passed in the current month, move to next month
+                if (selectedDate < new Date(date)) {
+                    selectedDate.setMonth(selectedDate.getMonth() + 1);
+                }
+                
+                adjustedDate = selectedDate.toISOString().split('T')[0];
+            }
+        }
+
         const transactions = await loadTransactions() || {};
-        const [year, month] = date.split('-');
+        const [year, month] = adjustedDate.split('-');
         const key = `${year}-${month}`;
 
         // Initialize month structure if it doesn't exist
@@ -353,8 +420,16 @@ app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
             id: crypto.randomUUID(),
             amount: parseFloat(amount),
             description,
-            date
+            date: adjustedDate
         };
+
+        // Add recurring information if present
+        if (recurring?.pattern) {
+            newTransaction.recurring = {
+                pattern: recurring.pattern,
+                until: recurring.until || null
+            };
+        }
 
         if (type === 'expense') {
             newTransaction.category = category;
@@ -415,6 +490,140 @@ app.get(BASE_PATH + '/api/totals/:year/:month', authMiddleware, async (req, res)
     }
 });
 
+// Helper function to parse recurring pattern
+function parseRecurringPattern(pattern) {
+    // Try matching the existing pattern first
+    const weeklyMatches = pattern.match(/every (\d+) (day|week|month|year)s?(?: on (\w+))?/);
+    
+    // Try matching the "Nth of month" pattern
+    const monthlyDayMatches = pattern.match(/every (\d+)(?:st|nd|rd|th) of the month/);
+    
+    if (weeklyMatches) {
+        const [_, interval, unit, dayOfWeek] = weeklyMatches;
+        return {
+            interval: parseInt(interval),
+            unit: unit.toLowerCase(),
+            dayOfWeek: dayOfWeek ? dayOfWeek.toLowerCase() : null
+        };
+    } else if (monthlyDayMatches) {
+        const [_, dayOfMonth] = monthlyDayMatches;
+        return {
+            interval: 1,
+            unit: 'monthday',
+            dayOfMonth: parseInt(dayOfMonth)
+        };
+    }
+    
+    throw new Error('Invalid recurring pattern');
+}
+
+// Helper function to generate recurring instances
+function generateRecurringInstances(transaction, startDate, endDate) {
+    if (!transaction.recurring?.pattern) return [];
+    
+    const instances = [];
+    const pattern = parseRecurringPattern(transaction.recurring.pattern);
+    
+    // Convert dates to Date objects for easier manipulation
+    const [tYear, tMonth, tDay] = transaction.date.split('-');
+    let currentDate = new Date(tYear, tMonth - 1, tDay);
+    
+    const [sYear, sMonth, sDay] = startDate.split('-');
+    const rangeStart = new Date(sYear, sMonth - 1, sDay);
+    
+    const [eYear, eMonth, eDay] = endDate.split('-');
+    const rangeEnd = new Date(eYear, eMonth - 1, eDay);
+    
+    const until = transaction.recurring.until 
+        ? (() => {
+            const [uYear, uMonth, uDay] = transaction.recurring.until.split('-');
+            return new Date(uYear, uMonth - 1, uDay);
+        })()
+        : rangeEnd;
+    
+    // Handle "Nth of month" pattern
+    if (pattern.unit === 'monthday') {
+        // Set the initial date to the first occurrence
+        currentDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), pattern.dayOfMonth);
+        if (currentDate < new Date(tYear, tMonth - 1, tDay)) {
+            currentDate.setMonth(currentDate.getMonth() + 1);
+        }
+    }
+    // For weekly patterns, ensure we start on the correct day of the week
+    else if (pattern.unit === 'week' && pattern.dayOfWeek) {
+        const weekdays = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const targetDay = weekdays.indexOf(pattern.dayOfWeek);
+        const currentDay = currentDate.getDay();
+        
+        // Calculate days to add to reach the target weekday
+        let daysToAdd = targetDay - currentDay;
+        if (daysToAdd < 0) {
+            daysToAdd += 7; // Move to next week if target day has passed
+        }
+        
+        // Adjust the start date to the first occurrence
+        currentDate.setDate(currentDate.getDate() + daysToAdd);
+        
+        // For intervals greater than 1, we need to ensure we're starting on the correct week
+        if (pattern.interval > 1) {
+            // Calculate weeks since the start date
+            const weeksSinceStart = Math.floor((currentDate - rangeStart) / (7 * 24 * 60 * 60 * 1000));
+            const remainingWeeks = weeksSinceStart % pattern.interval;
+            if (remainingWeeks !== 0) {
+                // Move forward to the next valid week
+                currentDate.setDate(currentDate.getDate() + (pattern.interval - remainingWeeks) * 7);
+            }
+        }
+    }
+    
+    // Track dates we've already added to prevent duplicates
+    const addedDates = new Set();
+    
+    // Generate instances
+    while (currentDate <= until) {
+        const dateStr = currentDate.toISOString().split('T')[0];
+        
+        // Only add if it falls within range and isn't a duplicate
+        if (currentDate >= rangeStart && 
+            currentDate <= rangeEnd && 
+            !addedDates.has(dateStr)) {
+            
+            instances.push({
+                ...transaction,
+                id: `${transaction.id}-${dateStr}`,
+                date: dateStr,
+                isRecurringInstance: true,
+                recurringParentId: transaction.id
+            });
+            
+            addedDates.add(dateStr);
+        }
+        
+        // Advance to next occurrence based on interval and unit
+        switch (pattern.unit) {
+            case 'day':
+                currentDate.setDate(currentDate.getDate() + pattern.interval);
+                break;
+            case 'week':
+                currentDate.setDate(currentDate.getDate() + (pattern.interval * 7));
+                break;
+            case 'month':
+                currentDate.setMonth(currentDate.getMonth() + pattern.interval);
+                break;
+            case 'year':
+                currentDate.setFullYear(currentDate.getFullYear() + pattern.interval);
+                break;
+            case 'monthday':
+                // Move to the next month, keeping the same day of month
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                break;
+        }
+    }
+    
+    return instances;
+}
+
+// Update the range endpoint to include recurring instances
 app.get(BASE_PATH + '/api/transactions/range', authMiddleware, async (req, res) => {
     try {
         const { start, end } = req.query;
@@ -422,7 +631,12 @@ app.get(BASE_PATH + '/api/transactions/range', authMiddleware, async (req, res) 
             return res.status(400).json({ error: 'Start and end dates are required' });
         }
 
+        // Get transactions with recurring instances already included
         const transactions = await getTransactionsInRange(start, end);
+        
+        // Sort by date
+        transactions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
         res.json(transactions);
     } catch (error) {
         console.error('Error fetching transactions:', error);
@@ -520,7 +734,7 @@ app.get(BASE_PATH + '/api/export/range', authMiddleware, async (req, res) => {
 app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const { type, amount, description, category, date } = req.body;
+        const { type, amount, description, category, date, recurring } = req.body;
         
         // Basic validation
         if (!type || !amount || !description || !date) {
@@ -551,14 +765,16 @@ app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) =>
                         ...transaction,
                         amount: parseFloat(amount),
                         description,
-                        date
+                        date,
+                        recurring: recurring || null
                     });
                 } else {
                     monthData.income[incomeIndex] = {
                         ...monthData.income[incomeIndex],
                         amount: parseFloat(amount),
                         description,
-                        date
+                        date,
+                        recurring: recurring || null
                     };
                 }
                 found = true;
@@ -576,7 +792,8 @@ app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) =>
                         ...transaction,
                         amount: parseFloat(amount),
                         description,
-                        date
+                        date,
+                        recurring: recurring || null
                     });
                 } else {
                     monthData.expenses[expenseIndex] = {
@@ -584,7 +801,8 @@ app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) =>
                         amount: parseFloat(amount),
                         description,
                         category,
-                        date
+                        date,
+                        recurring: recurring || null
                     };
                 }
                 found = true;
@@ -610,12 +828,18 @@ app.delete(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res)
         const transactions = await loadTransactions();
         let found = false;
         
+        // Check if this is a recurring instance
+        const isRecurringInstance = id.includes('-');
+        const parentId = isRecurringInstance ? id.split('-')[0] : id;
+        
         // Find and delete the transaction
         for (const key of Object.keys(transactions)) {
             const monthData = transactions[key];
             
             // Check in income array
-            const incomeIndex = monthData.income.findIndex(t => t.id === id);
+            const incomeIndex = monthData.income.findIndex(t => 
+                t.id === parentId || t.id === id
+            );
             if (incomeIndex !== -1) {
                 monthData.income.splice(incomeIndex, 1);
                 found = true;
@@ -623,7 +847,9 @@ app.delete(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res)
             }
             
             // Check in expenses array
-            const expenseIndex = monthData.expenses.findIndex(t => t.id === id);
+            const expenseIndex = monthData.expenses.findIndex(t => 
+                t.id === parentId || t.id === id
+            );
             if (expenseIndex !== -1) {
                 monthData.expenses.splice(expenseIndex, 1);
                 found = true;
@@ -669,12 +895,83 @@ app.get(BASE_PATH + '/api/settings/supported-currencies', authMiddleware, (req, 
 // Add logging to config endpoint
 app.get(BASE_PATH + '/config.js', (req, res) => {
     debugLog('Serving config.js with BASE_PATH:', BASE_PATH);
-    res.type('application/javascript').send(`
-        window.appConfig = {
-            basePath: '${BASE_PATH}',
-            debug: ${DEBUG}
-        };
-    `);
+    res.type('application/javascript');
+    res.send(`window.appConfig = {
+        debug: ${DEBUG},
+        basePath: '${BASE_PATH}',
+        title: '${SITE_TITLE}'
+    };`);
+});
+
+// API Authentication middleware for DumbCal
+const apiAuthMiddleware = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Missing authorization header' });
+    }
+
+    const token = authHeader.split(' ')[1];
+    if (token !== process.env.DUMB_SECRET) {
+        return res.status(401).json({ error: 'Invalid authorization token' });
+    }
+
+    next();
+};
+
+// Calendar API endpoint
+app.get(BASE_PATH + '/api/calendar/transactions', apiAuthMiddleware, async (req, res) => {
+    try {
+        const { start_date, end_date } = req.query;
+
+        // Validate date parameters
+        if (!start_date || !end_date) {
+            return res.status(400).json({ error: 'Missing start_date or end_date parameter' });
+        }
+
+        // Validate date format
+        const startDate = new Date(start_date);
+        const endDate = new Date(end_date);
+        
+        if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
+        }
+
+        // Load transactions
+        const allTransactions = await loadTransactions();
+        
+        // Filter transactions within date range
+        const filteredTransactions = [];
+        
+        for (const [month, data] of Object.entries(allTransactions)) {
+            const monthDate = new Date(month + '-01');
+            
+            if (monthDate >= startDate && monthDate <= endDate) {
+                // Add income transactions
+                data.income.forEach(transaction => {
+                    filteredTransactions.push({
+                        type: 'income',
+                        ...transaction,
+                        amount: parseFloat(transaction.amount)
+                    });
+                });
+                
+                // Add expense transactions
+                data.expenses.forEach(transaction => {
+                    filteredTransactions.push({
+                        type: 'expense',
+                        ...transaction,
+                        amount: parseFloat(transaction.amount)
+                    });
+                });
+            }
+        }
+
+        res.json({ transactions: filteredTransactions });
+    } catch (error) {
+        console.error('Calendar API error:', error);
+        res.status(500).json({ error: 'Internal server error' });
+    }
 });
 
 // Add logging to server startup
