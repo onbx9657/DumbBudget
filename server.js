@@ -635,14 +635,64 @@ function generateRecurringInstances(transaction, startDate, endDate) {
                 currentDate.setDate(currentDate.getDate() + (pattern.interval * 7));
                 break;
             case 'month':
-                currentDate.setMonth(currentDate.getMonth() + pattern.interval);
+                // Don't modify the current date yet
+                // Check if we need to handle end-of-month special case
+                const originalDay = parseInt(transaction.date.split('-')[2]);
+                const daysInCurrentMonth = new Date(
+                    currentDate.getFullYear(), 
+                    currentDate.getMonth() + 1, 
+                    0
+                ).getDate();
+                
+                // Check if the original transaction was on the last day of its month
+                const isLastDayOfMonth = originalDay >= daysInCurrentMonth;
+                
+                // Get the number of days in the target month (after adding interval)
+                const daysInTargetMonth = new Date(
+                    currentDate.getFullYear(),
+                    currentDate.getMonth() + pattern.interval + 1,
+                    0
+                ).getDate();
+                
+                // First, create a new date for next month with a safe day value (1)
+                const nextMonth = new Date(currentDate);
+                nextMonth.setDate(1); // Set to first of month to avoid rollover
+                nextMonth.setMonth(nextMonth.getMonth() + pattern.interval);
+                
+                if (isLastDayOfMonth) {
+                    // If original was last day of month, set to last day of target month
+                    nextMonth.setDate(daysInTargetMonth);
+                } else if (originalDay > daysInTargetMonth) {
+                    // If original day doesn't exist in target month, use last day
+                    nextMonth.setDate(daysInTargetMonth);
+                } else {
+                    // Otherwise use the same day of month
+                    nextMonth.setDate(originalDay);
+                }
+                
+                // Update current date with our safely constructed date
+                currentDate = nextMonth;
                 break;
             case 'year':
                 currentDate.setFullYear(currentDate.getFullYear() + pattern.interval);
                 break;
             case 'monthday':
-                // Move to the next month, keeping the same day of month
+                // For monthday pattern, move to next month then set the day
                 currentDate.setMonth(currentDate.getMonth() + 1);
+                
+                // Get the last day of the target month
+                const lastDayOfMonth = new Date(
+                    currentDate.getFullYear(),
+                    currentDate.getMonth() + 1,
+                    0
+                ).getDate();
+                
+                // If the desired day exceeds the last day, use the last day instead
+                if (pattern.dayOfMonth > lastDayOfMonth) {
+                    currentDate.setDate(lastDayOfMonth);
+                } else {
+                    currentDate.setDate(pattern.dayOfMonth);
+                }
                 break;
         }
     }
