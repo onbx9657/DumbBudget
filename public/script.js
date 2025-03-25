@@ -305,8 +305,8 @@ async function handleFetchResponse(response) {
 
     // Check content type
     const contentType = response.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-        debugLog('Response is not JSON, session likely expired');
+    if (!contentType || (!contentType.includes('application/json') && !contentType.includes('text/csv'))) {
+        debugLog('Response is not JSON or CSV, session likely expired');
         window.location.href = joinPath('login');
         return null;
     }
