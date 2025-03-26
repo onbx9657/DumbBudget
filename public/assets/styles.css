@@ -614,36 +614,77 @@ header {
 
 /* Footer */
 footer {
-    text-align: center;
-    padding-top: 0.75rem;
-    border-top: 1px solid var(--border);
-    margin-top: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: 2rem;
+    padding: 1rem;
+    width: 100%;
 }
 
-#exportBtn {
-    background: none;
-    border: none;
-    color: var(--text);
+.export-buttons {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+    background: var(--container);
     padding: 0.5rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    margin: 0 auto;
+    width: fit-content;
+}
+
+.export-btn {
+    all: unset;
+    background: transparent;
+    border: 1px solid var(--border);
+    padding: 0.5rem 1rem;
     cursor: pointer;
-    border-radius: 50%;
-    transition: all var(--transition);
+    color: var(--text);
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-size: 0.9rem;
+    min-width: 60px;
+    text-align: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 32px;
+    box-sizing: border-box;
+}
+
+.export-btn:hover {
+    background-color: var(--hover-color);
+    border-color: var(--accent-color);
+}
+
+.export-btn:active {
+    transform: translateY(1px);
+}
+
+/* Remove these specific styles */
+#exportBtn {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0 auto;
+    padding: 0.5rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text);
+    border-radius: 4px;
+    transition: background-color 0.2s;
 }
 
 #exportBtn:hover {
-    background: rgba(128, 128, 128, 0.1);
+    background-color: rgba(128, 128, 128, 0.1);
 }
 
 #exportBtn svg {
-    width: 20px;
-    height: 20px;
-    stroke: var(--text);
-    stroke-width: 2;
-    transition: stroke var(--transition);
+    width: 24px;
+    height: 24px;
+    stroke: currentColor;
 }
 
 /* Responsive adjustments */
