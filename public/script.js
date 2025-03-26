@@ -305,7 +305,7 @@ async function handleFetchResponse(response) {
 
     // Check content type
     const contentType = response.headers.get('content-type');
-    if (!contentType || (!contentType.includes('application/json') && !contentType.includes('text/csv'))) {
+    if (!contentType || (!contentType.includes('application/json') && contentType.split(';')[0].trim() !== 'text/csv')) {
         debugLog('Response is not JSON or CSV, session likely expired');
         window.location.href = joinPath('login');
         return null;
@@ -997,6 +997,85 @@ async function initMainPage() {
         } catch (error) {
             console.error('Error exporting transactions:', error);
             alert('Failed to export transactions. Please try again.');
+        }
+    });
+
+    // Export to PDF
+    document.getElementById('exportPdfBtn').addEventListener('click', async () => {
+        try {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            
+            // Get instance name from server
+            const configResponse = await fetch(joinPath('api/config'), fetchConfig);
+            await handleFetchResponse(configResponse);
+            const config = await configResponse.json();
+            const instanceName = config.instanceName || 'DumbBudget';
+            
+            // Get the current totals
+            const response = await fetch(joinPath(`api/totals/range?start=${startDate}&end=${endDate}`), fetchConfig);
+            await handleFetchResponse(response);
+            const totals = await response.json();
+            
+            // Get transactions
+            const transactionsResponse = await fetch(joinPath(`api/transactions/range?start=${startDate}&end=${endDate}`), fetchConfig);
+            await handleFetchResponse(transactionsResponse);
+            const transactions = await transactionsResponse.json();
+            
+            // Create PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            // Set font
+            doc.setFont('helvetica');
+            
+            // Add title
+            doc.setFontSize(20);
+            doc.text(instanceName, 20, 20);
+            
+            // Add date range
+            doc.setFontSize(12);
+            doc.text(`Date Range: ${startDate} to ${endDate}`, 20, 30);
+            
+            // Add totals section
+            doc.setFontSize(14);
+            doc.text('Summary', 20, 45);
+            doc.setFontSize(12);
+            doc.text(`Total Income: ${formatCurrency(totals.income)}`, 20, 55);
+            doc.text(`Total Expenses: ${formatCurrency(totals.expenses)}`, 20, 65);
+            doc.text(`Balance: ${formatCurrency(totals.balance)}`, 20, 75);
+            
+            // Add transactions table
+            const tableData = transactions.map(t => [
+                t.date,
+                t.description,
+                t.category || '-',
+                formatCurrency(t.type === 'expense' ? -t.amount : t.amount),
+                t.type
+            ]);
+            
+            doc.autoTable({
+                startY: 85,
+                head: [['Date', 'Description', 'Category', 'Amount', 'Type']],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillColor: [66, 66, 66] },
+                styles: { fontSize: 10 },
+                columnStyles: {
+                    0: { cellWidth: 30 }, // Date
+                    1: { cellWidth: 60 }, // Description
+                    2: { cellWidth: 30 }, // Category
+                    3: { cellWidth: 30 }, // Amount
+                    4: { cellWidth: 20 }  // Type
+                }
+            });
+            
+            // Save the PDF
+            doc.save(`transactions-${startDate}-to-${endDate}.pdf`);
+            
+        } catch (error) {
+            console.error('Error exporting to PDF:', error);
+            toastManager.show('Failed to export to PDF. Please try again.', 'error');
         }
     });
 
