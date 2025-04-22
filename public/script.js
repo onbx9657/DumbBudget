@@ -361,7 +361,7 @@ async function loadTransactions() {
             <div class="transaction-item ${isRecurring ? 'recurring-instance' : ''}" data-id="${transaction.id}" data-type="${transaction.type}">
                 <div class="transaction-content">
                     <div class="details">
-                        <div class="description">${transaction.description}</div>
+                        <div class="title">${transaction.title}</div>
                         <div class="metadata">
                             ${transaction.category ? `<span class="category">${transaction.category}</span>` : ''}
                             <span class="date">${formattedDate}</span>
@@ -467,7 +467,7 @@ function editTransaction(id, transaction, isRecurringInstance) {
 
     // Set form values
     document.getElementById('amount').value = transaction.amount;
-    document.getElementById('description').value = transaction.description;
+    document.getElementById('title').value = transaction.title;
     document.getElementById('transactionDate').value = transaction.date;
     
     // Set transaction type
@@ -732,7 +732,7 @@ function initModalHandling() {
         const formData = {
             type: currentTransactionType,
             amount: parseFloat(document.getElementById('amount').value),
-            description: document.getElementById('description').value,
+            title: document.getElementById('title').value,
             category: currentTransactionType === 'expense' ? document.getElementById('category').value : null,
             date: document.getElementById('transactionDate').value,
             recurring: buildRecurringPattern()
@@ -1048,7 +1048,7 @@ async function initMainPage() {
             // Add transactions table
             const tableData = transactions.map(t => [
                 t.date,
-                t.description,
+                t.title,
                 t.category || '-',
                 formatCurrency(t.type === 'expense' ? -t.amount : t.amount),
                 t.type
@@ -1056,14 +1056,14 @@ async function initMainPage() {
             
             doc.autoTable({
                 startY: 85,
-                head: [['Date', 'Description', 'Category', 'Amount', 'Type']],
+                head: [['Date', 'Title', 'Category', 'Amount', 'Type']],
                 body: tableData,
                 theme: 'grid',
                 headStyles: { fillColor: [66, 66, 66] },
                 styles: { fontSize: 10 },
                 columnStyles: {
                     0: { cellWidth: 30 }, // Date
-                    1: { cellWidth: 60 }, // Description
+                    1: { cellWidth: 60 }, // Title
                     2: { cellWidth: 30 }, // Category
                     3: { cellWidth: 30 }, // Amount
                     4: { cellWidth: 20 }  // Type

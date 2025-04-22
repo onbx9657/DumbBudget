@@ -35,7 +35,7 @@ Authorization: Bearer YOUR_DUMB_SECRET
     {
       "type": "income"|"expense",
       "amount": number,
-      "description": string,
+      "title": string,
       "date": string (ISO date),
       "category": string,
       "id": string,
@@ -78,7 +78,7 @@ Examples:
     {
       "type": "expense",
       "amount": 50.00,
-      "description": "Grocery shopping",
+      "title": "Grocery shopping",
       "date": "2024-03-15",
       "category": "Food",
       "id": "abc123"
@@ -86,7 +86,7 @@ Examples:
     {
       "type": "expense",
       "amount": 50.00,
-      "description": "Grocery shopping",
+      "title": "Grocery shopping",
       "date": "2024-03-22",
       "category": "Food",
       "id": "abc123-2024-03-22T00:00:00.000Z",
@@ -96,7 +96,7 @@ Examples:
     {
       "type": "income",
       "amount": 2000.00,
-      "description": "Salary",
+      "title": "Salary",
       "date": "2024-03-01",
       "category": "Salary",
       "id": "def456",

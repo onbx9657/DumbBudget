@@ -362,10 +362,10 @@ async function getTransactionsInRange(startDate, endDate) {
 // API Routes - all under BASE_PATH
 app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
     try {
-        const { type, amount, description, category, date, recurring } = req.body;
+        const { type, amount, title, category, date, recurring } = req.body;
         
         // Basic validation
-        if (!type || !amount || !description || !date) {
+        if (!type || !amount || !title || !date) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
         if (type !== 'income' && type !== 'expense') {
@@ -446,7 +446,7 @@ app.post(BASE_PATH + '/api/transactions', authMiddleware, async (req, res) => {
         const newTransaction = {
             id: crypto.randomUUID(),
             amount: parseFloat(amount),
-            description,
+            title,
             date: adjustedDate
         };
 
@@ -764,9 +764,9 @@ app.get(BASE_PATH + '/api/export/:year/:month', authMiddleware, async (req, res)
         ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
         // Convert to CSV
-        const csvRows = ['Date,Type,Category,Description,Amount'];
+        const csvRows = ['Date,Type,Category,Title,Amount'];
         allTransactions.forEach(t => {
-            csvRows.push(`${t.date},${t.type},${t.category || ''},${t.description},${t.amount}`);
+            csvRows.push(`${t.date},${t.type},${t.category || ''},${t.title},${t.amount}`);
         });
 
         res.setHeader('Content-Type', 'text/csv');
@@ -788,15 +788,15 @@ app.get(BASE_PATH + '/api/export/range', authMiddleware, async (req, res) => {
         const transactions = await getTransactionsInRange(start, end);
 
         // Convert to CSV with specified format
-        const csvRows = ['Category,Date,Description,Value'];
+        const csvRows = ['Category,Date,Title,Value'];
         transactions.forEach(t => {
             const category = t.type === 'income' ? 'Income' : t.category;
             const value = t.type === 'income' ? t.amount : -t.amount;
-            // Escape description to handle commas and quotes
-            const escapedDescription = t.description.replace(/"/g, '""');
-            const formattedDescription = escapedDescription.includes(',') ? `"${escapedDescription}"` : escapedDescription;
+            // Escape title to handle commas and quotes
+            const escapedTitle = t.title.replace(/"/g, '""');
+            const formattedTitle = escapedTitle.includes(',') ? `"${escapedTitle}"` : escapedTitle;
             
-            csvRows.push(`${category},${t.date},${formattedDescription},${value}`);
+            csvRows.push(`${category},${t.date},${formattedTitle},${value}`);
         });
 
         res.setHeader('Content-Type', 'text/csv');
@@ -811,10 +811,10 @@ app.get(BASE_PATH + '/api/export/range', authMiddleware, async (req, res) => {
 app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) => {
     try {
         const { id } = req.params;
-        const { type, amount, description, category, date, recurring } = req.body;
+        const { type, amount, title, category, date, recurring } = req.body;
         
         // Basic validation
-        if (!type || !amount || !description || !date) {
+        if (!type || !amount || !title || !date) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
         if (type !== 'income' && type !== 'expense') {
@@ -841,7 +841,7 @@ app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) =>
                     monthData.expenses.push({
                         ...transaction,
                         amount: parseFloat(amount),
-                        description,
+                        title,
                         date,
                         recurring: recurring || null
                     });
@@ -849,7 +849,7 @@ app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) =>
                     monthData.income[incomeIndex] = {
                         ...monthData.income[incomeIndex],
                         amount: parseFloat(amount),
-                        description,
+                        title,
                         date,
                         recurring: recurring || null
                     };
@@ -868,7 +868,7 @@ app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) =>
                     monthData.income.push({
                         ...transaction,
                         amount: parseFloat(amount),
-                        description,
+                        title,
                         date,
                         recurring: recurring || null
                     });
@@ -876,7 +876,7 @@ app.put(BASE_PATH + '/api/transactions/:id', authMiddleware, async (req, res) =>
                     monthData.expenses[expenseIndex] = {
                         ...monthData.expenses[expenseIndex],
                         amount: parseFloat(amount),
-                        description,
+                        title,
                         category,
                         date,
                         recurring: recurring || null
